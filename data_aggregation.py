@@ -1,12 +1,5 @@
 import pandas as pd
-import numpy as np
 import os
-from itertools import combinations
-
-import plotly as py
-import plotly.graph_objs as go
-import plotly.io as pio
-pio.renderers.default = "browser"
 
 # Path to data
 PATH = "data/"

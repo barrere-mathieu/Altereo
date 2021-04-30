@@ -89,5 +89,3 @@ for x, y in combinations(colonnes, 2):
 
     fig.update_layout(title_text="Histogramme du nombre de casses en fonction de "+str(x)+" et "+str(y))
     fig.show()
-
-

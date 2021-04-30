@@ -56,30 +56,38 @@ for x, y in combinations(colonnes, 2):
                 'size': size,
             },
             text =  labels,
+            name = 'Nombre de Casses : Histogramme 3D',
+            showlegend=True
     )
 
+    # Histogramme X
     trace2 = go.Bar(
         x = list(groupx.index),
         y = list(groupx),
-        name = 'Hist. '+str(x),
+        name = 'Nombre de casses par '+str(x),
         marker = dict(color='rgba(0, 0, 150, 0.6)', line=dict(color='rgba(0, 0, 150, 0.6)', width=1)),
+        text=list(groupx), textposition="auto"
     )
 
+    # Histogramme Y
     trace3 = go.Bar(
         y = list(groupy.index),
         x = list(groupy),
-        name = 'Hist. ' +str(y),
+        name = 'Nombre de casses par ' +str(y),
         marker = dict(color='rgba(0, 0, 150, 0.6)', line=dict(color='rgba(0, 0, 150, 0.6)', width=1)),
-        orientation= 'h'
+        orientation= 'h',
+        text=list(groupy), textposition="auto"
     )
 
     fig = subplots.make_subplots(rows=2, cols=2, specs=[[{}, {}], [{}, {}]], shared_xaxes=True,
                                  shared_yaxes=True, vertical_spacing=0.01, horizontal_spacing=0.01,
-                                 column_widths=[0.8, 0.2], row_width=[0.8, 0.2])
+                                 column_widths=[0.8, 0.2], row_width=[0.8, 0.2],
+                                 )
     fig.append_trace(trace1, 2, 1)
     fig.append_trace(trace3, 2, 2)
     fig.append_trace(trace2, 1, 1)
 
+    fig.update_layout(title_text="Histogramme du nombre de casses en fonction de "+str(x)+" et "+str(y))
     fig.show()
 
 

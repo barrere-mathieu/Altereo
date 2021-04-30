@@ -27,7 +27,7 @@ for mat in group.index.levels[0]:
     print(list(group[mat]))
     print(group[mat].index)
     trace = go.Scatter(
-                        y = np.log(list(group[mat])),
+                        y = list(group[mat]),
                         x = years,
                         mode = "lines",
                         name = mat,
@@ -36,6 +36,31 @@ for mat in group.index.levels[0]:
 
 layout = go.Layout(title='Nombre de casse vs. année de pose et matériaux',
                    xaxis=dict(title='Année de pose'),
+                   )
+fig = go.Figure(data=data, layout=layout)
+fig.show()
+
+# Graph diamètres
+df = df.drop(df[df.DIAMETRE == 0].index)
+df['diametre_range'] = pd.cut(df['DIAMETRE'], 10).astype(str)
+group = df.groupby(['MATERIAU', 'diametre_range']).size()
+
+diametre = group.index.levels[1]
+data = []
+for mat in group.index.levels[0]:
+    print(mat)
+    print(list(group[mat]))
+    print(group[mat].index)
+    trace = go.Scatter(
+                        y = list(group[mat]),
+                        x = diametre,
+                        mode = "lines",
+                        name = mat,
+                        text = list(group[mat]))
+    data.append(trace)
+
+layout = go.Layout(title='Nombre de casse vs. diamètre et matériaux',
+                   xaxis=dict(title='Diamètre'),
                    )
 fig = go.Figure(data=data, layout=layout)
 fig.show()

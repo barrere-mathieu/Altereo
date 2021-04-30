@@ -42,8 +42,8 @@ def create_dataset(Path):
             master_df = pd.concat([master_df, agg_df], join="inner", axis = 0)
             master_df_all = pd.concat([master_df_all, agg_df_all], join="inner", axis = 0)
     # Save dataframe: only pipes with events
-    master_df.to_csv(Path + 'master_df_events.csv')
+    master_df.to_csv(Path + 'master_df_events.csv', index=False)
     # Save dataframe: all pipes
-    master_df_all.to_csv(Path + 'master_df_all.csv')
+    master_df_all.to_csv(Path + 'master_df_all.csv', index = False)
 
 create_dataset(PATH)

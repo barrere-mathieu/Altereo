@@ -8,7 +8,7 @@ import plotly.io as pio
 pio.renderers.default = "browser"
 
 # Path to data
-PATH = "data/"
+PATH = "../data/"
 
 # Chargement dataset
 df = pd.read_csv(PATH + 'master_df_events.csv')

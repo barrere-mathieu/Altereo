@@ -13,7 +13,7 @@ pio.renderers.default = "browser"
 PATH = "data/"
 
 
-df = pd.read_csv(PATH + 'master_df.csv')
+df = pd.read_csv(PATH + 'master_df_events.csv')
 df = df.drop(df[df.MATERIAU == 'INCONNU'].index)
 df = df.drop(df[df.MATAGE == 'r'].index)
 
@@ -22,7 +22,7 @@ colonnes = ['MATERIAU', 'MATAGE', 'collectivite']
 for x, y in combinations(colonnes, 2):
     data = df[[x, y]]
     group = data.groupby([x,y]).size()
-    serie = np.log(list(group)/np.min(list(group)))
+    serie = np.log(list(group)/np.min(list(group)))*10
     # international_color = [float(each) for each in df2016.international]
     trace1 = [
         {
@@ -32,7 +32,6 @@ for x, y in combinations(colonnes, 2):
             'marker': {
                 'color': serie,
                 'size': serie,
-                'showscale': True,
             },
             "text" : list(group),
         }

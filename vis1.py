@@ -16,7 +16,7 @@ import plotly.io as pio
 pio.renderers.default = "browser"
 
 
-df = pd.read_csv("VillesClean_ETPmaster_df.csv")
+df = pd.read_csv("data/master_df.csv")
 df = df.drop(df[df.MATERIAU == 'INCONNU'].index)
 df = df.drop(df[df.MATAGE == 'r'].index)
 

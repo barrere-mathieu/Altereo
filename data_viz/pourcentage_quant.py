@@ -38,11 +38,11 @@ group_all = group_all.merge(group, on=["year_pose", "MATERIAU"])
 clrs = []
 for mat in group_all['MATERIAU']:
     if mat == "ACIER":
-        clrs.append("rgb(211, 71, 91, 1.0)")
+        clrs.append("rgb(90, 44, 158, 1.0)")
     elif mat == "BONNA":
-        clrs.append("rgb(42, 71, 79, 1.0)")
+        clrs.append("rgb(128, 128, 128, 1.0)")
     elif mat == "FONTEDUCTILE":
-        clrs.append("rgb(42, 71, 210, 1.0)")
+        clrs.append("rgb(0, 0, 0, 1.0)")
     elif mat == "FONTEGRISE":
         clrs.append("rgb(42, 227, 210, 1.0)")
     elif mat =="PEBD":
@@ -99,15 +99,15 @@ group_all = group_all[group_all.DIAMETRE <= 20000]
 clrs = []
 for mat in group_all['MATERIAU']:
     if mat == "ACIER":
-        clrs.append("rgb(211, 71, 91, 1.0)")
+        clrs.append("rgb(90, 44, 158, 1.0)")
     elif mat == "BONNA":
-        clrs.append("rgb(42, 71, 79, 1.0)")
+        clrs.append("rgb(128, 128, 128, 1.0)")
     elif mat == "FONTEDUCTILE":
-        clrs.append("rgb(42, 71, 210, 1.0)")
+        clrs.append("rgb(0, 0, 0, 1.0)")
     elif mat == "FONTEGRISE":
         clrs.append("rgb(42, 227, 210, 1.0)")
-    elif mat == "PEBD":
-        clrs.append("rgb(42, 227, 39, 1.0)")
+    elif mat =="PEBD":
+        clrs.append( "rgb(42, 227, 39, 1.0)")
     elif mat == "PEHD":
         clrs.append("rgb(223, 227, 39, 1.0)")
     elif mat == "PLOMB":

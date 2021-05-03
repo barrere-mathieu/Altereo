@@ -11,7 +11,7 @@ pio.renderers.default = "browser"
 PATH = "../data/"
 
 # Chargement dataset
-df = pd.read_csv(PATH + 'master_df_events.csv')
+df = pd.read_csv('data/master_df_events.csv')
 df = df.drop(df[df.MATERIAU == 'INCONNU'].index)
 
 # Graph date de pose

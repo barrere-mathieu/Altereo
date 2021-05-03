@@ -22,6 +22,48 @@ Conclusions day 1: Exploration des données et data visualisation
         - FONTEGRISE18001900 et FONTEGRISE19401970 peu fiable
         - PEHD très fiable
         - FONTEDUCTILE assez fiable. Plus hautes proportion de casse pour 20102020 et 19511966 mais moins d'installations donc moins de sens statistique
+
+Remarques et conclusions:
+1/ Etude qualitative des tuyaux cassés:
+matage%Matériau (nb_casses)     --> Grande majoritée de FONTEDUCTILE, FONTEGRISE et PVC
+				--> minorité de Plomb et PEBD
+                                --> Matage variable sur la FONTEDUCTILE, FONTEDUCTILE19661980 majoritaire sur la FONTEDUCTILE, FONTEGRISE19301940 majoritaire sur la FONTEGRISE, PVC19701990 majoritaire sur le PVC
+collectivité% Matériau (nb_casses)   --> Collectivité 22 et 13 présentent le plus d'events
+                                     --> Dans les collectivités 22 et 13, il y a une grande majorité de FONTEDUCTILE, FONTEGRISE
+collectivité%Matage (nb_casses) --> ?? les mêmes conclusions?? à discuter
+                                --> Dans les collectivités 22 et 13, il y a une grande majorité de FONTEGRISE19401970
+
+2/ Etude quntitative des tuyaux cassés:
+nb_casses%anné_pose:   --> Grande majoritée de casses de FONTEDUCTILE et PVC déposés entre 1967-1983
+                       --> Grande majoritée de FONTEGRISE déposés entre 1951-1967
+
+nb_casses%Diamètre:    --> Grande majoritée de casses pour les faibles diamètres inférieures à 31025mm
+
+année_pose%diamètre (nb_casses) --> Grande majoritée de casses pour les faibles diamètres inférieures à 15528mm déposés entre 1951-1983
+                                --> cette graphe peut être suffisante comme première étape.?????? 
+
+3/ Etude qualitative des tuyaux cassés/ installé:
+Matage%Matériau:  --> PLOMB et PEBD peu fiables: Peu d'installation mais beaucoup de casse en proportion
+                  --> PVC19481970 peu fiable
+                  --> FONTEGRISE18001900 et FONTEGRISE19401970 peu fiable
+                  --> PEHD très fiable
+                  --> FONTEDUCTILE assez fiable. Plus hautes proportion de casse pour 20102020 et 19511966 mais moins d'installations donc moins de sens statistique??????
+Collectivité%Matériau:   --> PLOMB et Acier peu fiable dans les collectivtés 5 et 15
+                         --> FONTEGRISE peu fiable dans les collectivités 3 et 13
+
+Collectivité%Matage:     --> PVC19481970, PEHD19581995, PLOMB19301995 et ACIER18451920 peu fiable
+
+4/ Etude quantitative normalisée:
+
+pourcentage_casse%année de pose  --> Acier déposé entre 1927-2001 peu fiable  
+                                 --> PEBD déposé en 1984 peu fiable, 
+                                 --> FONTEGRISE déposé entre 1854-1969 peu fiable 
+
+Pourcentage-casse%diamètre (on a décidé de faire cette étude sur des diamètres inférieur à 20000mm selon les résultats obtenus précédemment):
+                                 --> ACIER, FONTEGRISE et PEHD sont très peu fiables à faible diamètre
+
+                                     
+
 A faire:
     - Pousser l'analyse de fiabilité aux variables quantitatives (modèle du fichier viz_event_normalize) et analyser les résultats (fiabilité vs année de pose et fiabilité vs. diamètre).
     - Peut etre composer année de pose et diamètre avec le matériau (ou le matage si rien ne ressort)

@@ -39,7 +39,7 @@ for x, y in combinations(colonnes, 2):
             Y.append(j)
             try:
                 size.append(
-                    group1[i][j] / np.min(list(group1))
+                    np.log(group1[i][j] / np.min(list(group1)))*10
                 )
                 labels.append(group1[i][j])
             except:

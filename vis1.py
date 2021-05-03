@@ -31,6 +31,11 @@ fig = px.scatter(df, x=Diam, y=nb_collect, size=nb_pannes,
 	       
 fig.show()
 
+fig = px.scatter(df, x=nb_pannes, y=nb_collect, size=nb_pannes,
+                  size_max=40, color =Diam)
+
+fig.show()
+
 
 
 

@@ -8,9 +8,9 @@ Rappel de de la problématique:
 Conclusions day 1: Exploration des données et data visualisation
     - 1 Unique matériaux est associé à 1 matage -> la variable matériau est inutile car la variable matage contient toute son information. On l'utilise cependant pour la data visualisation car elle permet de catégoriser les types de matage
     - Grande majoritée de FONTEDUCTILE, FONTEGRISE et PVC
-    - Matage variable sur la FONTEDUCTILE, FONTEGRISE19401970 majoritaire sur la FONTEGRISE, PVC19701990 majoritaire sur le PVC
+    - Matage variable sur la FONTEDUCTILE, FONTEDUCTILE19661980 majoritaire sur la FONTEDUCTILE, FONTEGRISE19401970 majoritaire sur la FONTEGRISE, PVC19701990 majoritaire sur le PVC
     - Collectivité 22 et 13 présentent le plus de tuyaux et le plus d'events
-    - Tous les matériaux ne sont pas représentés dans toutes les collectivités -> nous décidons de créer un dataset complet en rajoutant la variable qualitative "collectivité"
+    - Tous les matériaux et les matages ne sont pas représentés dans toutes les collectivités -> nous décidons de créer un dataset complet en rajoutant la variable qualitative "collectivité"
     - Année majoritaire de casse :
         FONTEDUCTILE: 1890-1900
         PVC: 1930 - 1950

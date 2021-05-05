@@ -3,6 +3,7 @@ import numpy as np
 from itertools import combinations
 
 import plotly.graph_objs as go
+import plotly.express as px
 from plotly import subplots
 import plotly.io as pio
 pio.renderers.default = "browser"
@@ -17,6 +18,22 @@ df = df.drop(df[df.MATERIAU == 'INCONNU'].index)
 df_all = df_all.drop(df_all[df_all.MATERIAU == 'INCONNU'].index)
 df = df.drop(df[df.MATAGE == 'r'].index)
 df_all = df_all.drop(df_all[df_all.MATAGE == 'r'].index)
+
+#### Graphe pourcentage de casse pour chaque matériau
+group = df.groupby(['MATERIAU']).size().reset_index()
+group_all = df_all.groupby(['MATERIAU']).size().reset_index()
+group_all = group_all.merge(group, on=[ "MATERIAU"])
+
+group_all["Pourcentage"] = [(x/y)*100 for x, y in zip(list(group_all["0_y"]),list(group_all["0_x"]))]
+
+
+fig = px.scatter(group_all, x="MATERIAU", y=group_all["Pourcentage"], size=group_all["Pourcentage"],
+                 size_max=40, color=group_all["Pourcentage"])
+
+fig.show()
+
+
+
 
 # Bubble chart: dénombrement variables qualitatives
 colonnes = ['MATERIAU', 'MATAGE', 'collectivite']

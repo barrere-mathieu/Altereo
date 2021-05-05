@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 from itertools import combinations
 
+import plotly
+plotly.offline.iplot
 import plotly.graph_objs as go
 from plotly import subplots
 import plotly.io as pio
@@ -11,7 +13,7 @@ pio.renderers.default = "browser"
 PATH = "../data/"
 
 # Chargement dataset
-df = pd.read_csv('data/master_df_events.csv')
+df = pd.read_csv(PATH +'master_df_events.csv')
 df = df.drop(df[df.MATERIAU == 'INCONNU'].index)
 
 # Graph date de pose
@@ -28,7 +30,7 @@ for mat in group.index.levels[0]:
     print(group[mat].index)
     trace = go.Scatter(
                         y = list(group[mat]),
-                        x = years,
+                        x = group[mat].index,
                         mode = "lines",
                         name = mat,
                         text = list(group[mat]))
@@ -53,7 +55,7 @@ for mat in group.index.levels[0]:
     print(group[mat].index)
     trace = go.Scatter(
                         y = list(group[mat]),
-                        x = diametre,
+                        x = group[mat].index,
                         mode = "lines",
                         name = mat,
                         text = list(group[mat]))
@@ -63,4 +65,5 @@ layout = go.Layout(title='Nombre de casse vs. diamètre et matériaux',
                    xaxis=dict(title='Diamètre'),
                    )
 fig = go.Figure(data=data, layout=layout)
-fig.show()
+# fig.show()
+plotly.offline.plot(fig)

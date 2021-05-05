@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from itertools import combinations
 
+import plotly
 import plotly.graph_objs as go
 from plotly import subplots
 import plotly.io as pio
@@ -14,9 +15,16 @@ df = pd.read_csv(PATH + 'master_df_all.csv')
 
 df = df.drop(df[df.MATERIAU == 'INCONNU'].index)
 df = df.drop(df[df.MATAGE == 'r'].index)
+df['DDP'] = pd.to_datetime(df['DDP'])
+df['year_pose'] = df['DDP'].apply(lambda x: x.year)
+df['year_pose_range'] = pd.cut(df['year_pose'], 10).astype(str)
+df['diametre_range'] = pd.cut(np.log(df['DIAMETRE']), 5).astype(str)
+# df['diametre_range2'] = pd.qcut(df['DIAMETRE'], q=5).astype(str)
+df['diametre_range'] = pd.qcut(df['DIAMETRE'], q=5).astype(str)
+
 
 # Bubble chart: dénombrement variables qualitatives
-colonnes = ['MATERIAU', 'MATAGE', 'collectivite']
+colonnes = ['year_pose_range', 'diametre_range', 'MATERIAU', 'MATAGE', 'collectivite']
 df = df[colonnes]
 for x, y in combinations(colonnes, 2):
     group1 = df[[x, y]].groupby([x, y]).size()
@@ -53,7 +61,7 @@ for x, y in combinations(colonnes, 2):
                 'size': size,
             },
             text =  labels,
-            name = 'Nombre de Casses : Histogramme 3D',
+            name = 'Nombre de tuyaux installés : Histogramme 3D',
             showlegend=True
     )
 
@@ -61,7 +69,7 @@ for x, y in combinations(colonnes, 2):
     trace2 = go.Bar(
         x = list(groupx.index),
         y = list(groupx),
-        name = 'Nombre de casses par '+str(x),
+        name = 'Nombre de tuyaux installés par '+str(x),
         marker = dict(color='rgba(0, 0, 150, 0.6)', line=dict(color='rgba(0, 0, 150, 0.6)', width=1)),
         text=list(groupx), textposition="auto"
     )
@@ -70,7 +78,7 @@ for x, y in combinations(colonnes, 2):
     trace3 = go.Bar(
         y = list(groupy.index),
         x = list(groupy),
-        name = 'Nombre de casses par ' +str(y),
+        name = 'Nombre de tuyaux installés par ' +str(y),
         marker = dict(color='rgba(0, 0, 150, 0.6)', line=dict(color='rgba(0, 0, 150, 0.6)', width=1)),
         orientation= 'h',
         text=list(groupy), textposition="auto"
@@ -84,5 +92,6 @@ for x, y in combinations(colonnes, 2):
     fig.append_trace(trace3, 2, 2)
     fig.append_trace(trace2, 1, 1)
 
-    fig.update_layout(title_text="Histogramme du nombre de casses en fonction de "+str(x)+" et "+str(y))
-    fig.show()
+    fig.update_layout(title_text="Histogramme du nombre de tuyaux installés en fonction de "+str(x)+" et "+str(y))
+    # fig.show()
+    plotly.offline.plot(fig)

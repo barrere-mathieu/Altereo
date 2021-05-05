@@ -29,11 +29,12 @@ df_all['DDP'] = pd.to_datetime(df_all['DDP'])
 df['year_pose'] = df['DDP'].apply(lambda x: x.year)
 df_all['year_pose'] = df_all['DDP'].apply(lambda x: x.year)
 
+### Graph date de pose avec bar chart
 group = df.groupby(['MATERIAU', 'year_pose']).size().reset_index()
 group_all = df_all.groupby(['MATERIAU', 'year_pose']).size().reset_index()
 group_all = group_all.merge(group, on=["year_pose", "MATERIAU"])
 
-# Graph date de pose avec bar chart
+
 # fonction pour les couleurs
 clrs = []
 for mat in group_all['MATERIAU']:
@@ -87,13 +88,29 @@ fig.show()
 ######### pourcentage de casses en fonction du diamètre
 df = df.drop(df[df.DIAMETRE == 0].index)
 df_all = df_all.drop(df_all[df_all.DIAMETRE == 0].index)
+
+group = df.groupby(['DIAMETRE']).size().reset_index()
+group_all = df_all.groupby(['DIAMETRE']).size().reset_index()
+group_all = group_all.merge(group, on = ['DIAMETRE'])
+
+
+group_all["Pourcentage"] = [(x/y)*100 for x, y in zip(list(group_all["0_y"]),list(group_all["0_x"]))]
+
+
+fig = px.scatter(group_all, x="DIAMETRE", y=group_all["Pourcentage"], size=group_all["Pourcentage"],
+                 size_max=40, color=group_all["Pourcentage"])
+
+fig.show()
+
+
+########### histrogramme 
 group = df.groupby(['MATERIAU', 'DIAMETRE']).size().reset_index()
 group_all = df_all.groupby(['MATERIAU', 'DIAMETRE']).size().reset_index()
 
 group_all = group_all.merge(group, on = ['MATERIAU', 'DIAMETRE'])
 
 ### bar chart
-# on va récupérer juste les données pour Diamètre <= 20000 mm
+# on va récupérer juste les données pour Diamètre <= 20000 mm 
 group_all = group_all[group_all.DIAMETRE <= 20000]
 
 clrs = []

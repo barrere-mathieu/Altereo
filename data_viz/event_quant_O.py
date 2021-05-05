@@ -72,11 +72,10 @@ fig.show()
 
 ###############
 group = df.groupby(['diametre_range', 'year_pose_range']).size().reset_index()
+    
+group["nb_casses"] =group[0]
 
-for elt in group:
-    nb_casses = group[elt]
-
-fig = px.scatter(group, x="diametre_range", y="year_pose_range", size=nb_casses,
-                 size_max=40, color=nb_casses)
+fig = px.scatter(group, x="diametre_range", y="year_pose_range", size=group["nb_casses"],
+                 size_max=40, color=group["nb_casses"])
 
 fig.show()

@@ -28,6 +28,7 @@ Remarques et conclusions:
 matage%Matériau (nb_casses)     --> Grande majoritée de FONTEDUCTILE, FONTEGRISE et PVC
 				--> minorité de Plomb et PEBD
                                 --> Matage variable sur la FONTEDUCTILE, FONTEDUCTILE19661980 majoritaire sur la FONTEDUCTILE, FONTEGRISE19301940 majoritaire sur la FONTEGRISE, PVC19701990 majoritaire sur le PVC
+
 collectivité% Matériau (nb_casses)   --> Collectivité 22 et 13 présentent le plus d'events
                                      --> Dans les collectivités 22 et 13, il y a une grande majorité de FONTEDUCTILE, FONTEGRISE
 collectivité%Matage (nb_casses) --> ?? les mêmes conclusions?? à discuter
@@ -44,10 +45,9 @@ année_pose%diamètre (nb_casses) --> Grande majoritée de casses pour les faibl
 
 3/ Etude qualitative des tuyaux cassés/ installé:
 Matage%Matériau:  --> PLOMB et PEBD peu fiables: Peu d'installation mais beaucoup de casse en proportion
-                  --> PVC19481970 peu fiable
+                  --> PVC19481970 et ACIER qlq soit le type de matage peu fiable
                   --> FONTEGRISE18001900 et FONTEGRISE19401970 peu fiable
-                  --> PEHD très fiable
-                  --> FONTEDUCTILE assez fiable. Plus hautes proportion de casse pour 20102020 et 19511966 mais moins d'installations donc moins de sens statistique??????
+                  --> FONTEDUCTILE, PEHD, BONNA assez fiable.
 Collectivité%Matériau:   --> PLOMB et Acier peu fiable dans les collectivtés 5 et 15
                          --> FONTEGRISE peu fiable dans les collectivités 3 et 13
 
@@ -56,8 +56,8 @@ Collectivité%Matage:     --> PVC19481970, PEHD19581995, PLOMB19301995 et ACIER1
 4/ Etude quantitative normalisée:
 
 pourcentage_casse%année de pose  --> Acier déposé entre 1927-2001 peu fiable  
-                                 --> PEBD déposé en 1984 peu fiable, 
-                                 --> FONTEGRISE déposé entre 1854-1969 peu fiable 
+                                 --> PEBD déposé entre 1956-1984 peu fiable, 
+                                 --> FONTEGRISE peu fiable ql soit l'année
 
 Pourcentage-casse%diamètre (on a décidé de faire cette étude sur des diamètres inférieur à 20000mm selon les résultats obtenus précédemment):
                                  --> ACIER, FONTEGRISE et PEHD sont très peu fiables à faible diamètre

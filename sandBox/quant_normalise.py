@@ -74,7 +74,8 @@ for mat in list_mat:
         y = list(group_all[group_all.MATERIAU == mat].pourcentage),
         marker = dict(color = group_all[group_all.MATERIAU == mat].Couleur,
                        line = dict(color ='rgba(255, 174, 255, 0.5)',width =0.5)),
-        text =mat)
+        text =mat
+        )
     data.append(trace1)
 
 layout = go.Layout(title='Pourcentage de casse vs. année de pose',
@@ -84,7 +85,7 @@ layout = go.Layout(title='Pourcentage de casse vs. année de pose',
 fig = go.Figure(data = data, layout = layout)
 fig.update_layout(barmode='stack')
 
-fig.show()
+fig.show()  
 ######### pourcentage de casses en fonction du diamètre
 df = df.drop(df[df.DIAMETRE == 0].index)
 df_all = df_all.drop(df_all[df_all.DIAMETRE == 0].index)

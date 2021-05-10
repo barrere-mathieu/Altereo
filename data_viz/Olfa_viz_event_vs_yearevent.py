@@ -13,7 +13,7 @@ import plotly.io as pio
 pio.renderers.default = "browser"
 
 # Path to data
-PATH = "data/"
+PATH = "../data/"
 
 df = pd.read_csv(PATH + "master_df_events.csv")
 df = df.drop(df[df.MATERIAU == 'INCONNU'].index)

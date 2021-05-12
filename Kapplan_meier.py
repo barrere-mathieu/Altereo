@@ -41,7 +41,8 @@ T,E = datetimes_to_durations(df_all["DDP"], df_all["DDCC"], freq="Y")
 kmf = KaplanMeierFitter()
 
 kmf.fit(T, event_observed=E, label = "Toutes les collectivités")
-kmf.survival_function_.plot()
+kmf.plot()#survival_function_.plot()
+
 
 # récupérer toutes les données de la collectivité 22
 group_22 = df_all[df_all.collectivite == "Collectivite_22"]
@@ -51,14 +52,20 @@ T2,E2 = datetimes_to_durations(group_22["DDP"], group_22["DDCC"], freq="Y")
 kmf2 = KaplanMeierFitter()
 
 kmf2.fit(T2, event_observed=E2, label = "Collectivité 22")
-print(kmf2.survival_function_)
+#print(kmf2.survival_function_)
 
 kmf2.plot()
+plt.grid()
+
 
 
 # cumulative density: prob qu'un tuyaux se casse dans les deux cas précédents
+plt.figure(2)
+
 kmf.plot_cumulative_density()
 kmf2.plot_cumulative_density()
+plt.grid()
+
 
 # récupérer les données pour chaque collectivité
 

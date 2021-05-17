@@ -6,8 +6,6 @@ from plotly.subplots import make_subplots
 from lifelines import KaplanMeierFitter
 from lifelines.utils import datetimes_to_durations
 
-
-
 from matplotlib import pyplot as plt
 import plotly.graph_objs as go
 from plotly import subplots
@@ -19,56 +17,65 @@ import matplotlib as mpl
 
 #fonction pour appliquer Kapplan_meier
 def categorical_km(df,cat, ax = None):
-    T,E = datetimes_to_durations(df["DDP"], df["DDCC"], freq="Y")
+    df.loc[df.year_event.isna() == True, "duration"] = df.year_event.max() - df.year_event.min()
+    df.loc[df.year_event.isna() == False, "duration"]= df['year_event'] - df.year_event.min()  
+
+    T,E = datetimes_to_durations(df["year_pose"], df["year_event"], freq="Y")
     kmf = KaplanMeierFitter()
 
-    kmf.fit(T, event_observed=E, label = cat)    
-    kmf.survival_function_.plot(ax=ax, label = cat, legend=False)
+    kmf.fit(df.duration, event_observed=E, label = cat)    
+    kmf.plot(ax=ax, label = cat, legend=False)
 
 # Path to data
-PATH = "data/"
+PATH = "../data/"
 
 # Chargement dataset
 df_all = pd.read_csv(PATH + 'master_df_all.csv')
 df_all = df_all.drop(df_all[df_all.MATERIAU == 'INCONNU'].index)
 df_all = df_all.drop(df_all[df_all.MATAGE == 'r'].index)
 
+
+# préparation des données
+df_all['DDP'] = pd.to_datetime(df_all['DDP'])
+df_all['DDCC'] = pd.to_datetime(df_all['DDCC'])
+
+df_all['year_pose'] = df_all['DDP'].apply(lambda x: x.year)
+df_all['year_event'] = df_all['DDCC'].apply(lambda x: x.year)
+df_all = df_all.drop(["DDP", "DDCC", "ID" ], axis = 1)
+
 # Analyse de survie independemment des collectivités
 #changer la configuration par défaut
 mpl.rcParams['lines.linewidth'] = 2
-T,E = datetimes_to_durations(df_all["DDP"], df_all["DDCC"], freq="Y")
+
+# remplacer la date de la casse par 2013 (la dernière date d'observation)
+df_all.loc[df_all.year_event.isna() == True, "duration"] = df_all.year_event.max() - df_all.year_event.min()
+df_all.loc[df_all.year_event.isna() == False, "duration"]= df_all['year_event'] - df_all.year_event.min()  
+
+T,E = datetimes_to_durations(df_all["year_pose"], df_all["year_event"], freq="Y")
 
 kmf = KaplanMeierFitter()
 
-kmf.fit(T, event_observed=E, label = "Toutes les collectivités")
-kmf.plot()#survival_function_.plot()
+kmf.fit(df_all.duration, event_observed=E, label = "Toutes les collectivités")
+kmf.plot()
 
 
 # récupérer toutes les données de la collectivité 22
 group_22 = df_all[df_all.collectivite == "Collectivite_22"]
 
-T2,E2 = datetimes_to_durations(group_22["DDP"], group_22["DDCC"], freq="Y")
+group_22.loc[group_22.year_event.isna() == True, "duration"] = group_22.year_event.max() - group_22.year_event.min()
+group_22.loc[group_22.year_event.isna() == False, "duration"]= group_22['year_event'] - group_22.year_event.min()  
+
+T2,E2 = datetimes_to_durations(group_22["year_pose"], group_22["year_event"], freq="Y")
 
 kmf2 = KaplanMeierFitter()
 
-kmf2.fit(T2, event_observed=E2, label = "Collectivité 22")
+kmf2.fit(group_22.duration, event_observed=E2, label = "Collectivité 22")
 #print(kmf2.survival_function_)
 
 kmf2.plot()
 plt.grid()
 
-
-
-# cumulative density: prob qu'un tuyaux se casse dans les deux cas précédents
-plt.figure(2)
-
-kmf.plot_cumulative_density()
-kmf2.plot_cumulative_density()
-plt.grid()
-
-
 # récupérer les données pour chaque collectivité
-
 #changer la configuration par défaut
 mpl.rcParams['lines.linewidth'] = 5
 
@@ -94,13 +101,6 @@ plt.tight_layout()
 
 
 
-# # préparation des données
-# df_all['DDP'] = pd.to_datetime(df_all['DDP'])
-# df_all['DDCC'] = pd.to_datetime(df_all['DDCC'])
-
-# df_all['year_pose'] = df_all['DDP'].apply(lambda x: x.year)
-# df_all['year_event'] = df_all['DDCC'].apply(lambda x: x.year)
-# #df_all = df_all.drop(["DDP", "DDCC", "ID" ], axis = 1)
 
 
 # # Analyse de survie independemment des collectivités
@@ -141,6 +141,16 @@ plt.tight_layout()
 # print(kmf.survival_function_)
 
 # kmf.plot()
+
+
+
+
+# # cumulative density: prob qu'un tuyaux se casse dans les deux cas précédents
+# plt.figure(2)
+
+# kmf.plot_cumulative_density()
+# kmf2.plot_cumulative_density()
+# plt.grid()
 
 
 

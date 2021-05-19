@@ -95,7 +95,7 @@ for i, col in enumerate(list_collec):
         col = i%5+1)
 
 fig.update_xaxes(title_text="Année de casses", row = 5, col = 3 )
-fig.update_yaxes(title_text="Nombre de casses", row= 3, col=1)
+fig.update_yaxes(title_text="Taux de casses", row= 3, col=1)
 
 fig.show()
 

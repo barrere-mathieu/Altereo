@@ -80,8 +80,8 @@ plt.grid()
 #changer la configuration par défaut
 mpl.rcParams['lines.linewidth'] = 5
 
-fig, axes = plt.subplots(nrows = 5, ncols = 5, sharex = True,
-                          sharey = True,figsize=(50, 40)
+fig, axes = plt.subplots(nrows = 5, ncols = 5, sharex = False,
+                          sharey = False,figsize=(50, 40)
                         )
 liste_col = df_all["collectivite"].unique()
 for col, ax in zip(liste_col, axes.flatten()):

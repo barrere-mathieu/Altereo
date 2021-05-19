@@ -59,6 +59,7 @@ def calcul_Pvalue(colonne, df, liste_col):
             result_similar.append([m1, m2, round(p.p_value, 2)])
     return (result_dispar, result_similar)
 
+#### test logrank pour chaque colonne de la collectivité 22
 col_list = [col for col in group_22.columns if group_22[col].dtype == object]
 del col_list[2]
 for col in col_list:
@@ -72,6 +73,8 @@ for col in col_list:
     
     dispart_data_collec = pd.DataFrame(result_dispar, columns = ["Membre_1", "Membre_2", "p_value"])
     dispart_data_collec.to_csv(PATH + col+'_disparite_pvalue.csv')
+
+#### test logrank pour chaque collectvité
 
 liste_col = list(df_all["collectivite"].unique())
 result_similar = []

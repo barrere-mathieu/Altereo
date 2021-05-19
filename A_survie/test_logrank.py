@@ -36,8 +36,6 @@ df_all['year_pose'] = df_all['DDP'].apply(lambda x: x.year)
 df_all['year_event'] = df_all['DDCC'].apply(lambda x: x.year)
 df_all['diametre_range'] = pd.qcut(df_all['DIAMETRE'], q=6).astype(str)
 
-
-
 group_22 = df_all[df_all.collectivite == "Collectivite_22"]
 
 #fonction pour les colonnes diration et event
@@ -59,14 +57,17 @@ def calcul_Pvalue(colonne, df, liste_col):
             result_similar.append([m1, m2, round(p.p_value, 2)])
     return (result_dispar, result_similar)
 
-#### test logrank pour chaque colonne de la collectivité 22
+#### test logrank pour chaque colonne de la collectivité 22 et pour chaque collectvité
 col_list = [col for col in group_22.columns if group_22[col].dtype == object]
-del col_list[2]
 for col in col_list:
-    liste_col = list(group_22[col].unique())
     result_similar = []
     result_dispar = []
-    calcul_Pvalue(col, group_22, liste_col)
+    if col == "collectivite":
+        liste_col = list(df_all["collectivite"].unique())
+        calcul_Pvalue(col, df_all, liste_col)
+    else:
+        liste_col = list(group_22[col].unique())
+        calcul_Pvalue(col, group_22, liste_col)
             
     similar_data_collec = pd.DataFrame(result_similar, columns = ["Membre_1", "Membre_2", "p_value"])
     similar_data_collec.to_csv(PATH + col+'_similar_pvalue.csv')
@@ -74,17 +75,27 @@ for col in col_list:
     dispart_data_collec = pd.DataFrame(result_dispar, columns = ["Membre_1", "Membre_2", "p_value"])
     dispart_data_collec.to_csv(PATH + col+'_disparite_pvalue.csv')
 
-#### test logrank pour chaque collectvité
 
-liste_col = list(df_all["collectivite"].unique())
-result_similar = []
-result_dispar = []
-calcul_Pvalue("collectivite", df_all, liste_col)     
-similar_data_collec = pd.DataFrame(result_similar, columns = ["Membre_1", "Membre_2", "p_value"])
-similar_data_collec.to_csv(PATH + 'collet_similar_pvalue.csv')
 
-dispart_data_collec = pd.DataFrame(result_dispar, columns = ["Membre_1", "Membre_2", "p_value"])
-dispart_data_collec.to_csv(PATH + 'collect_disparite_pvalue.csv')
+
+
+
+
+
+
+
+
+# #### test logrank pour chaque collectvité
+
+# liste_col = list(df_all["collectivite"].unique())
+# result_similar = []
+# result_dispar = []
+# calcul_Pvalue("collectivite", df_all, liste_col)     
+# similar_data_collec = pd.DataFrame(result_similar, columns = ["Membre_1", "Membre_2", "p_value"])
+# similar_data_collec.to_csv(PATH + 'collet_similar_pvalue.csv')
+
+# dispart_data_collec = pd.DataFrame(result_dispar, columns = ["Membre_1", "Membre_2", "p_value"])
+# dispart_data_collec.to_csv(PATH + 'collect_disparite_pvalue.csv')
 
 
 

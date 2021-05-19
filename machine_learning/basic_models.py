@@ -4,6 +4,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sksurv.preprocessing import OneHotEncoder
+from sksurv.ensemble import RandomSurvivalForest
+from sksurv.util import Surv
 
 """
 PROBLEMES A VERIFIER :
@@ -100,7 +102,7 @@ df_all['year_pose'] = scaler.fit_transform(df_all[['year_pose']])
 # Using decision trees so can handle categorical variables
 
 # Target definition: Tuple: (Event, durée de vie)
-df_all['target'] = df_all.apply(lambda row: (row.event, row.duree_de_vie), axis=1)
+# df_all['target'] = df_all.apply(lambda row: (row.event, row.duree_de_vie), axis=1)
 
 
 # New approach: At year A, we start a new experiment -> we test on all data with obs window fully included in A + P
@@ -108,16 +110,24 @@ df_all['target'] = df_all.apply(lambda row: (row.event, row.duree_de_vie), axis=
 # We remove pipes that has not started observation period
 
 learning_data = df_all[(df_all['year_pose'] < A) & (df_all['obs_start'] < A)]
+learning_target = Surv.from_arrays(learning_data.event, learning_data.duree_de_vie, 'casse', 'durée de vie')
 learning_data.index = learning_data.ID
-learning_data = learning_data.drop(columns=['ID', 'DDCC', 'IDT', 'DDP', 'year_casse', 'event', 'duree_de_vie'])
+learning_data = learning_data.drop(columns=['ID', 'DDCC', 'IDT', 'DDP', 'year_casse', 'event', 'duree_de_vie', 'obs_start', 'obs_end', 'derniere_casse', 'MATERIAU', 'MATAGE', 'collectivite'])
 
 test_data = df_all[(df_all['year_pose'] < A) & (df_all['obs_start'] < A) & (df_all['obs_end'] > A+P)]
+test_target = Surv.from_arrays(test_data.event, test_data.duree_de_vie, 'casse', 'durée de vie')
 test_data.index = test_data.ID
-test_data = test_data.drop(columns=['ID', 'DDCC', 'IDT', 'DDP', 'year_casse', 'event', 'duree_de_vie'])
+test_data = test_data.drop(columns=['ID', 'DDCC', 'IDT', 'DDP', 'year_casse', 'event', 'duree_de_vie', 'obs_start', 'obs_end', 'derniere_casse', 'MATERIAU', 'MATAGE', 'collectivite'])
 
-
-
-
+# Model construction
+random_state = 0
+rsf = RandomSurvivalForest(n_estimators=1000,
+                           min_samples_split=10,
+                           min_samples_leaf=15,
+                           max_features="sqrt",
+                           n_jobs=-1,
+                           random_state=random_state)
+rsf.fit(learning_data, learning_target)
 
 
 # FIRST APPROACH : NOT OPTIMAL

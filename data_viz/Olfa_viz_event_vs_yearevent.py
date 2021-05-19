@@ -67,7 +67,6 @@ df_all = df_all.drop(df_all[df_all.MATAGE == 'r'].index)
 group_all = df_all.groupby(['collectivite']).size().reset_index()
 group_all = group_all.merge(group, on = ['collectivite'])
 
-list_collec = group_all['collectivite'].unique()
 group_all['taux_casse'] = [(x/y)*100 for x, y in zip(list(group_all["0_y"]),list(group_all["0_x"]))]
 #data = []
 L = list()
@@ -96,7 +95,7 @@ for i, col in enumerate(list_collec):
         col = i%5+1)
 
 fig.update_xaxes(title_text="Année de casses", row = 5, col = 3 )
-fig.update_yaxes(title_text="Nombre de casses", row= 3, col=1)
+fig.update_yaxes(title_text="Taux de casses", row= 3, col=1)
 
 fig.show()
 

@@ -57,6 +57,15 @@ def calcul_Pvalue(colonne, df, liste_col):
             result_dispar.append([m1, m2, round(p.p_value, 2)])
     return (result_dispar, result_similar)
 
+def calcul_Pvalue_table(colonne, df, liste_col):
+    table = np.zeros((len(liste_col), len(liste_col)))
+    for m1, m2 in itertools.combinations(liste_col, 2):
+        df_2 = df.loc[(df[colonne] == m1) | (df[colonne] == m2)]
+        event_duration(df_2)
+        p = multivariate_logrank_test(df_2['duration'], df_2[colonne], df_2['event'])
+        table[liste_col.index(m1), liste_col.index(m2)] = round(p.p_value, 2)
+    return table
+
 #### test logrank pour chaque colonne de la collectivité 22 et pour chaque collectvité
 col_list = [col for col in group_22.columns if group_22[col].dtype == object]
 for col in col_list:
@@ -65,6 +74,8 @@ for col in col_list:
     if col == "collectivite":
         liste_col = list(df_all["collectivite"].unique())
         calcul_Pvalue(col, df_all, liste_col)
+        table_collectivite = calcul_Pvalue_table(col, df_all, liste_col)
+
     else:
         liste_col = list(group_22[col].unique())
         calcul_Pvalue(col, group_22, liste_col)
@@ -75,27 +86,7 @@ for col in col_list:
     dispart_data_collec = pd.DataFrame(result_dispar, columns = ["Membre_1", "Membre_2", "p_value"])
     dispart_data_collec.to_csv('../results/' + col+'_disparite_pvalue.csv')
 
-
-
-def calcul_Pvalue_table(colonne, df, liste_col):
-    table = np.zeros((len(liste_col), len(liste_col)))
-    for m1, m2 in itertools.combinations(liste_col, 2):
-        df_2 = df.loc[(df[colonne] == m1) | (df[colonne] == m2)]
-        event_duration(df_2)
-        p = multivariate_logrank_test(df_2['duration'], df_2[colonne], df_2['event'])
-        table[liste_col.index(m1), liste_col.index(m2)] = round(p.p_value, 2)
-    return table
-
-
-liste_col = list(df_all["collectivite"].unique())
-table_collectivite = calcul_Pvalue_table("collectivite", df_all, liste_col)
-x = table_collectivite[0, :]
-y = table_collectivite[1, :]
-fig, ax = plt.subplots()
-ax.scatter(x, y)
-for i, txt in enumerate(liste_col):
-    ax.annotate(txt, (x[i], y[i]))
-plt.show()
+    np.savetxt('tableau_collectivite.csv', table_collectivite, delimiter=',')
 
 # #### test logrank pour chaque collectvité
 

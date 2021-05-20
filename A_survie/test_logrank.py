@@ -86,7 +86,7 @@ for col in col_list:
     dispart_data_collec = pd.DataFrame(result_dispar, columns = ["Membre_1", "Membre_2", "p_value"])
     dispart_data_collec.to_csv('../results/' + col+'_disparite_pvalue.csv')
 
-    np.savetxt('tableau_collectivite.csv', table_collectivite, delimiter=',')
+    np.savetxt('../results/tableau_collectivite.csv', table_collectivite, delimiter=',')
 
 # #### test logrank pour chaque collectvité
 

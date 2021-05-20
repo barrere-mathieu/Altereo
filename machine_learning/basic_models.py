@@ -1,21 +1,15 @@
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sksurv.preprocessing import OneHotEncoder
 from sksurv.ensemble import RandomSurvivalForest
 from sksurv.util import Surv
+import pickle
 
 """
 PROBLEMES A VERIFIER :
     - Consistance entre 'dataset_all' et 'dataset_event' pour les évènements
         - Tous les évènements présents dans All ?
-        - Evenements en double ?
-    
-    - Fitting / Test
-        - Dans le dataset de test, éliminer les redondances: les tuyaux cassés plusieurs fois = on ne garde que la dernière fois
-
+        - Gestion des doublons ? (plusieurs casses)
 """
 
 # General data
@@ -29,22 +23,11 @@ P = 3       # Durée de la prédiction
 df = pd.read_csv(PATH + 'master_df_events.csv')
 df_all = pd.read_csv(PATH + 'master_df_all.csv')
 
+# Enlever les cases inconnues (uniquement valable pour le 1er dataset. Maintenant aucun inconnu
 df = df.drop(df[df.MATERIAU == 'INCONNU'].index)
 df_all = df_all.drop(df_all[df_all.MATERIAU == 'INCONNU'].index)
 df = df.drop(df[df.MATAGE == 'r'].index)
 df_all = df_all.drop(df_all[df_all.MATAGE == 'r'].index)
-
-# Dupliquer les tuyaux cassés et les ré-inclure dans le dataset comme non cassé (de cette manière ils ne disparaissent pas)
-# Les tuyaux réparés apparaitront dans le dataset comme existant, avec une réparation effectuée
-# Prendre le dataset DF, trier dans l'ordre des ID et DDC
-df = df.sort_values(['ID', 'DDCC'], ascending = [True, True])
-# Ne garder que les valeur unique de la colonne ID, avec l'option keep = last
-duplicate = df.drop_duplicates(subset ="ID", keep = 'last', inplace=False)
-# Enlever date de casse (tuyaux pas encore re-cassés)
-duplicate['DDCC'] = np.NaN
-# Ajouter ce dataset à la suite de DF_ALL
-df_all = pd.concat([df_all, duplicate], ignore_index=True, sort = False)
-
 
 # Building datetime features
 df_all['DDP'] = pd.to_datetime(df_all['DDP'])
@@ -53,6 +36,23 @@ df_all['DDCC'] = pd.to_datetime(df_all['DDCC'])
 df_all['year_casse'] = df_all['DDCC'].apply(lambda x: x.year)
 df['DDCC'] = pd.to_datetime(df['DDCC'])
 df['year_casse'] = df['DDCC'].apply(lambda x: x.year)
+
+# Enlever les casses des années >= A (on ne les connais pas encore)
+df_all.loc[df_all.year_casse >= A] = np.NaN
+df_all = df_all.drop_duplicates(keep = 'first') # On élimine les doublons : il se peut qu'un tuyau ait été cassé 2 fois dans une date > A, la seuls colonne qui les distingue est la date de casse (fixée à NaN) -> doublon
+
+# Dupliquer les tuyaux cassés et les ré-inclure dans le dataset comme non cassé (de cette manière ils ne disparaissent pas)
+# Les tuyaux réparés apparaitront dans le dataset comme existant, avec une réparation effectuée
+# Prendre le dataset DF, trier dans l'ordre des ID et DDC
+df = df.sort_values(['ID', 'DDCC'], ascending = [True, True])
+# Enlever date de casse (tuyaux fonctionnel, mais ayant subit une réparation)
+duplicate = df.loc[df.year_casse < A]
+duplicate['DDCC'] = np.NaN
+# Ne garder que les valeur unique de la colonne ID, avec l'option keep = last
+duplicate = duplicate.drop_duplicates(subset ="ID", keep = 'last', inplace=False)
+# Ajouter ce dataset à la suite de DF_ALL
+df_all = pd.concat([df_all, duplicate], ignore_index=True, sort = False)
+
 
 # Periode d'observation
 obs = df_all.groupby(['collectivite'])['year_casse'].min().rename("obs_start").reset_index(drop=False)
@@ -98,10 +98,11 @@ df_all['DIAMETRE'] = scaler.fit_transform(df_all[['DIAMETRE']])
 df_all['year_pose'] = scaler.fit_transform(df_all[['year_pose']])
 
 
-# Encoding quantitative variables :
-# Using decision trees so can handle categorical variables
+# Encoding quantitative variables : oneHotEncoding On supprime MATERIAU car l'info est contenue dans MATAGE
+df_all = pd.concat([df_all, pd.get_dummies(df_all.collectivite)], axis = 1)
+df_all = pd.concat([df_all, pd.get_dummies(df_all.MATAGE)], axis = 1)
 
-# Target definition: Tuple: (Event, durée de vie)
+# Target definition: Tuple: (Event, durée de vie) -> définie plus tard grâce à Surv.from_array
 # df_all['target'] = df_all.apply(lambda row: (row.event, row.duree_de_vie), axis=1)
 
 
@@ -114,14 +115,15 @@ learning_target = Surv.from_arrays(learning_data.event, learning_data.duree_de_v
 learning_data.index = learning_data.ID
 learning_data = learning_data.drop(columns=['ID', 'DDCC', 'IDT', 'DDP', 'year_casse', 'event', 'duree_de_vie', 'obs_start', 'obs_end', 'derniere_casse', 'MATERIAU', 'MATAGE', 'collectivite'])
 
-test_data = df_all[(df_all['year_pose'] < A) & (df_all['obs_start'] < A) & (df_all['obs_end'] > A+P)]
+# Uniquement les non cassés
+test_data = df_all[(df_all['year_pose'] < A) & (df_all['obs_start'] < A) & (df_all['obs_end'] > A+P) & (df_all['reparation'] == 0)]
 test_target = Surv.from_arrays(test_data.event, test_data.duree_de_vie, 'casse', 'durée de vie')
 test_data.index = test_data.ID
 test_data = test_data.drop(columns=['ID', 'DDCC', 'IDT', 'DDP', 'year_casse', 'event', 'duree_de_vie', 'obs_start', 'obs_end', 'derniere_casse', 'MATERIAU', 'MATAGE', 'collectivite'])
 
 # Model construction
 random_state = 0
-rsf = RandomSurvivalForest(n_estimators=1000,
+rsf = RandomSurvivalForest(n_estimators=500,
                            min_samples_split=10,
                            min_samples_leaf=15,
                            max_features="sqrt",

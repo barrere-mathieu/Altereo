@@ -52,9 +52,9 @@ def calcul_Pvalue(colonne, df, liste_col):
         event_duration(df_2)
         p = multivariate_logrank_test(df_2['duration'], df_2[colonne], df_2['event'])
         if round(p.p_value, 2)>0.05 :
-            result_dispar.append([ m1, m2, round(p.p_value, 2)])
+            result_similar.append([ m1, m2, round(p.p_value, 2)])
         if round(p.p_value, 2)<=0.05 :
-            result_similar.append([m1, m2, round(p.p_value, 2)])
+            result_dispar.append([m1, m2, round(p.p_value, 2)])
     return (result_dispar, result_similar)
 
 #### test logrank pour chaque colonne de la collectivité 22 et pour chaque collectvité
@@ -70,20 +70,32 @@ for col in col_list:
         calcul_Pvalue(col, group_22, liste_col)
             
     similar_data_collec = pd.DataFrame(result_similar, columns = ["Membre_1", "Membre_2", "p_value"])
-    similar_data_collec.to_csv(PATH + col+'_similar_pvalue.csv')
+    similar_data_collec.to_csv('../results/' + col+'_similar_pvalue.csv')
     
     dispart_data_collec = pd.DataFrame(result_dispar, columns = ["Membre_1", "Membre_2", "p_value"])
-    dispart_data_collec.to_csv(PATH + col+'_disparite_pvalue.csv')
+    dispart_data_collec.to_csv('../results/' + col+'_disparite_pvalue.csv')
 
 
 
+def calcul_Pvalue_table(colonne, df, liste_col):
+    table = np.zeros((len(liste_col), len(liste_col)))
+    for m1, m2 in itertools.combinations(liste_col, 2):
+        df_2 = df.loc[(df[colonne] == m1) | (df[colonne] == m2)]
+        event_duration(df_2)
+        p = multivariate_logrank_test(df_2['duration'], df_2[colonne], df_2['event'])
+        table[liste_col.index(m1), liste_col.index(m2)] = round(p.p_value, 2)
+    return table
 
 
-
-
-
-
-
+liste_col = list(df_all["collectivite"].unique())
+table_collectivite = calcul_Pvalue_table("collectivite", df_all, liste_col)
+x = table_collectivite[0, :]
+y = table_collectivite[1, :]
+fig, ax = plt.subplots()
+ax.scatter(x, y)
+for i, txt in enumerate(liste_col):
+    ax.annotate(txt, (x[i], y[i]))
+plt.show()
 
 # #### test logrank pour chaque collectvité
 

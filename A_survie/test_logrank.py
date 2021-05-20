@@ -75,7 +75,7 @@ for col in col_list:
         liste_col = list(df_all["collectivite"].unique())
         calcul_Pvalue(col, df_all, liste_col)
         table_collectivite = calcul_Pvalue_table(col, df_all, liste_col)
-
+        np.savetxt('../results/tableau_collectivite.csv', table_collectivite, delimiter=',')
     else:
         liste_col = list(group_22[col].unique())
         calcul_Pvalue(col, group_22, liste_col)
@@ -86,7 +86,6 @@ for col in col_list:
     dispart_data_collec = pd.DataFrame(result_dispar, columns = ["Membre_1", "Membre_2", "p_value"])
     dispart_data_collec.to_csv('../results/' + col+'_disparite_pvalue.csv')
 
-    np.savetxt('../results/tableau_collectivite.csv', table_collectivite, delimiter=',')
 
 # #### test logrank pour chaque collectvité
 

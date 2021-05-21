@@ -1,14 +1,10 @@
 import pandas as pd
-import numpy as np
 import math 
 
-from plotly.offline import init_notebook_mode, iplot
 from plotly.subplots import make_subplots
 
 
 import plotly.graph_objs as go
-from plotly import subplots
-import plotly.express as px
 import plotly.io as pio
 pio.renderers.default = "browser"
 

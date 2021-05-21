@@ -51,7 +51,7 @@ df_all = df_all.drop(["ID"], axis = 1)
 year_event_pose(df_all)
 df_22 = df_all[df_all.collectivite == "Collectivite_22"]
 
-# récupérer les données pour un matérieu précis
+# Analyse de survie pour chaque matérieu
 ## Set up subplot grid
 fig, axes = plt.subplots(nrows = 2, ncols = 3, sharex = False,
                          sharey = False,figsize=(25, 20)
@@ -72,7 +72,7 @@ for mat, ax in zip(liste_mat, axes.flatten()):
 fig.tight_layout()
 
 
-# récupérer les données pour un matage précis
+# Analyse de survie pour chaque matage
 fig, axes = plt.subplots(nrows = 5, ncols = 5, sharex = False,
                          sharey = False,figsize=(50, 35)
                         )
@@ -90,7 +90,7 @@ for mtg, ax in zip(liste_mtg, axes.flatten()):
         
 fig.tight_layout()
 
-# récupérer les données pour un rang de diametre précis
+# Analyse de survie pour chaque tranche de diametre 
 fig, axes = plt.subplots(nrows = 2, ncols = 3, sharex = False,
                          sharey = False,figsize=(25, 15)
                         )

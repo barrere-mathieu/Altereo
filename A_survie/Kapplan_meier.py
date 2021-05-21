@@ -1,3 +1,5 @@
+''' Analyse de survie pour chaque collectivité''' 
+
 import pandas as pd
 from lifelines import KaplanMeierFitter
 from lifelines.utils import datetimes_to_durations

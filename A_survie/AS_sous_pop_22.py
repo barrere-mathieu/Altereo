@@ -37,7 +37,7 @@ def categorical_km(df, df_cat ,cat, ax = None):
 mpl.rcParams['lines.linewidth'] = 7
 
 # Path to data
-PATH = "../data/"
+PATH = "data/"
 
 # Chargement dataset
 df_all = pd.read_csv(PATH + 'master_df_all.csv')
@@ -113,27 +113,22 @@ fig.tight_layout()
 
 
 # ########## test
-# df_mdt = df_collec[df_collec.MATERIAU == "PEHD"]
+# df_mdt = df_22[df_22.MATERIAU == "ACIER"]
+# a = df_22.year_event.min()
+# b = df_mdt.year_event.min()
 
 # # pas de casse dans tte la liste
 # if df_mdt.year_event.isnull().values.all() == True:
-#     print("hello 11111111111111111111111111")
-#     df_mdt.loc[df_mdt.year_event.isna() == True, "duration"] = df_collec.year_event.max()- df_collec.year_event.min()
-# #une seule casse
-# elif df_mdt.year_event.max() == df_mdt.year_event.min() and df_mdt.year_event.isnull().values.all() == False:
-#     print("hello")
-#     df_mdt.loc[df_mdt.year_event.isna() == True, "duration"] = df_collec.year_event.max()- df_collec.year_event.min()
-#     df_mdt.loc[df_mdt.year_event.isna() == False, "duration"]= df_mdt['year_event']- df_collec.year_event.min() 
+#     df_mdt.loc[df_mdt.year_event.isna() == True, "duration"] = df_22.year_event.max()- df_22.year_event.min()
 # else:
-#     print("Olfaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-#     df_mdt.loc[df_mdt.year_event.isna() == True, "duration"] = df_collec.year_event.max() - df_collec.year_event.min()
-#     df_mdt.loc[df_mdt.year_event.isna() == False, "duration"]= df_mdt['year_event'] - df_collec.year_event.min()  
+#     df_mdt.loc[df_mdt.year_event.isna() == True, "duration"] = df_22.year_event.max() - df_22.year_event.min()
+#     df_mdt.loc[df_mdt.year_event.isna() == False, "duration"]= df_mdt['year_event'] - df_22.year_event.min()  
 
 # T,E = datetimes_to_durations(df_mdt["DDP"], df_mdt["DDCC"], freq="Y")
 # kmf = KaplanMeierFitter()
 
-# kmf.fit(df_mdt.duration, event_observed=E, label = 16200)    
-# kmf.plot(label = 16200, legend=False)
+# kmf.fit(df_mdt.duration, event_observed=E)    
+# kmf.plot(label = "PEHD", legend=False)
 
 
 

@@ -14,12 +14,11 @@ PROBLEMES A VERIFIER :
 """
 
 # General parameters
-# PATH = "data/"
 PATH = "../data/"
 A = 2008    # Année de prédiction
 P = 2       # Durée de la prédiction
-MODEL_FIT = True # Set to false if you want to load a model
-MODEL_NAME = 'model_rsf.sav' # Set to None if you don't want to save the model
+MODEL_FIT = False # Set to false if you want to load a model
+MODEL_NAME = 'model_rsf' # Set to None if you don't want to save the model
 MODEL_LOAD = "model_rsf.sav" # Path to the model to load. Only works if MODEL_FIT is False.
 
 
@@ -148,7 +147,7 @@ if MODEL_FIT:
                                random_state=random_state)
     model.fit(learning_data, learning_target)
     if MODEL_NAME is not None:
-        pickle.dump(model, open(MODEL_NAME, 'wb'))
+        pickle.dump(model, open(MODEL_NAME + '.sav', 'wb'))
     print('Model predicting')
     pred = model.predict(test_data)
 
@@ -178,11 +177,21 @@ temp.index = temp.ID
 temp.index.name = None
 temp = temp.sort_values(['ID', 'year_casse'], ascending = [True, True])
 temp = temp.drop_duplicates(subset ="ID", keep = 'first', inplace=False)
-temp = temp['event']
 # Combining prediction and events
-test_data = pd.concat([test_data, temp], axis = 1, join='inner')
-# AUC Calculation
-calcul_AUC.AUC(test_data)
+test_data = pd.concat([test_data, temp['event']], axis = 1, join='inner')
+
+# AUC Calculation & saving
+annotations = [
+    ('Model', 'Random Survival Forest'),
+    ('Année prédiction', A),
+    ('Durée Prédiction (année)', P),
+    ('Nombre de collectivités', len(temp.collectivite.unique())),
+    ('Nombre tuyaux total', test_data.shape[0]),
+    ('Nombre de casses', sum(test_data.event)),
+]
+
+
+calcul_AUC.save_AUC(test_data, MODEL_NAME, annotations)
 
 
 

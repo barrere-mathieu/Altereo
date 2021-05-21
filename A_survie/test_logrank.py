@@ -1,19 +1,10 @@
 import pandas as pd
 import numpy as np
-import math 
-from plotly.offline import init_notebook_mode, iplot
-from plotly.subplots import make_subplots
-from lifelines import KaplanMeierFitter
 from lifelines.utils import datetimes_to_durations
 from lifelines.statistics import multivariate_logrank_test
 import itertools
 
 
-
-from matplotlib import pyplot as plt
-import plotly.graph_objs as go
-from plotly import subplots
-import plotly.express as px
 import plotly.io as pio
 pio.renderers.default = "browser"
 import matplotlib as mpl
@@ -73,7 +64,7 @@ for col in col_list:
     result_dispar = []
     if col == "collectivite":
         liste_col = list(df_all["collectivite"].unique())
-        calcul_Pvalue(col, df_all, liste_col)
+        #calcul_Pvalue(col, df_all, liste_col)
         table_collectivite = calcul_Pvalue_table(col, df_all, liste_col)
         np.savetxt('../results/tableau_collectivite.csv', table_collectivite, delimiter=',')
     else:
@@ -85,6 +76,17 @@ for col in col_list:
     
     dispart_data_collec = pd.DataFrame(result_dispar, columns = ["Membre_1", "Membre_2", "p_value"])
     dispart_data_collec.to_csv('../results/' + col+'_disparite_pvalue.csv')
+
+
+
+
+
+
+
+
+
+
+
 
 
 # #### test logrank pour chaque collectvité
@@ -124,6 +126,7 @@ for col in col_list:
 #     dispart_data_collec.to_csv(PATH + col+'_disparite_pvalue.csv')
 #################################################
 
+# from lifelines import KaplanMeierFitter
 
 # #fonction pour appliquer Kapplan_meier
 # def categorical_km(feature, t='duration', event='event', df=group_22, ax=None):
@@ -139,14 +142,16 @@ for col in col_list:
 #         kmf.fit(df[idx][t], event_observed=df[idx][event], label=cat)    
 #         kmf.plot(ax=ax, label=cat, ci_show=True, legend=False)
     
-#fonction pour les colonnes diration et event
+# #fonction pour les colonnes diration et event
 
+# from matplotlib import pyplot as plt
+# from lifelines.statistics import multivariate_logrank_test
 
-# col_list = ["MATERIAU"]
+# col_list = ["MATERIAU", "MATAGE"]
 
-# fig, axes = plt.subplots(nrows = 1, ncols = 1, 
-#                          sharex = True, sharey = True,
-#                          figsize=(15, 10)
+# fig, axes = plt.subplots(nrows = 1, ncols = 2, 
+#                           sharex = False, sharey = False,
+#                           figsize=(15, 10)
 #                         )
 
 # for cat, ax in zip(col_list, axes.flatten()):

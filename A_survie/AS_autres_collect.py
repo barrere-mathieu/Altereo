@@ -1,20 +1,15 @@
 import pandas as pd
-import numpy as np
-from plotly.offline import init_notebook_mode, iplot
-from plotly.subplots import make_subplots
 from lifelines import KaplanMeierFitter
 from lifelines.utils import datetimes_to_durations
 
 
 from matplotlib import pyplot as plt
-from plotly import subplots
-import plotly.express as px
 import plotly.io as pio
 pio.renderers.default = "browser"
 import matplotlib as mpl
 
-# fonction pour préparer les données
-def prep_donnees(df):
+# Ajout des colonnes "year_pose" et "year_event"
+def year_event_pose(df):
     df['DDP'] = pd.to_datetime(df_all['DDP'])
     df['DDCC'] = pd.to_datetime(df_all['DDCC'])
     
@@ -52,7 +47,7 @@ df_all = df_all.drop(df_all[df_all.MATERIAU == 'INCONNU'].index)
 df_all = df_all.drop(df_all[df_all.MATAGE == 'r'].index)
 
 # préparation des données
-prep_donnees(df_all)
+year_event_pose(df_all)
 
 
 # récupérer le PVC  et le fonteductile de chaque collectivité

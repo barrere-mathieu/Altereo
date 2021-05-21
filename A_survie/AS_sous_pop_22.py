@@ -1,27 +1,21 @@
 import pandas as pd
-import numpy as np
-import math
-from plotly.offline import init_notebook_mode, iplot
-from plotly.subplots import make_subplots
 from lifelines import KaplanMeierFitter
 from lifelines.utils import datetimes_to_durations
 
-
 from matplotlib import pyplot as plt
-from plotly import subplots
-import plotly.express as px
 import plotly.io as pio
 pio.renderers.default = "browser"
 import matplotlib as mpl
 
-# fonction pour préparer les données
-def prep_donnees(df):
-    df['DDP'] = pd.to_datetime(df_all['DDP'])
-    df['DDCC'] = pd.to_datetime(df_all['DDCC'])
+# Ajout des colonnes "year_pose" et "year_event"
+def year_event_pose(df):
+    df['DDP'] = pd.to_datetime(df['DDP'])
+    df['DDCC'] = pd.to_datetime(df['DDCC'])
     
     df['year_pose'] = df['DDP'].apply(lambda x: x.year)
     df['year_event'] = df['DDCC'].apply(lambda x: x.year)
-    df = df.drop(["ID"], axis = 1)
+    df['diametre_range'] = pd.qcut(df['DIAMETRE'], q=6).astype(str)
+    
     
 #fonction pour appliquer Kapplan_meier
 def categorical_km(df, df_cat ,cat, ax = None):
@@ -50,23 +44,23 @@ df_all = pd.read_csv(PATH + 'master_df_all.csv')
 
 df_all = df_all.drop(df_all[df_all.MATERIAU == 'INCONNU'].index)
 df_all = df_all.drop(df_all[df_all.MATAGE == 'r'].index)
-df_all['diametre_range'] = pd.qcut(df_all['DIAMETRE'], q=6).astype(str)
+df_all = df_all.drop(["ID"], axis = 1)
 
 
 # récupérer toutes les données de la collectivité 22
-df_collec = df_all[df_all.collectivite == "Collectivite_22"]
-prep_donnees(df_collec)
+year_event_pose(df_all)
+df_22 = df_all[df_all.collectivite == "Collectivite_22"]
 
-# récupérer les données pour un matérieu précis
+# Analyse de survie pour chaque matérieu
 ## Set up subplot grid
-fig, axes = plt.subplots(nrows = 2, ncols = 3, sharex = True,
-                         sharey = True,figsize=(25, 20)
+fig, axes = plt.subplots(nrows = 2, ncols = 3, sharex = False,
+                         sharey = False,figsize=(25, 20)
                         )
 
-liste_mat = df_collec["MATERIAU"].unique()
+liste_mat = df_22["MATERIAU"].unique()
 for mat, ax in zip(liste_mat, axes.flatten()):
-    df_mat = df_collec[df_collec.MATERIAU == mat]
-    categorical_km(df_collec, df_mat , mat, ax = ax)
+    df_mat = df_22[df_22.MATERIAU == mat]
+    categorical_km(df_22, df_mat , mat, ax = ax)
     
     ax.set_title(mat,pad=20,  fontsize=56)
     ax.set_xlabel('Duration', fontsize = 40)
@@ -78,14 +72,14 @@ for mat, ax in zip(liste_mat, axes.flatten()):
 fig.tight_layout()
 
 
-# récupérer les données pour un matage précis
-fig, axes = plt.subplots(nrows = 5, ncols = 5, sharex = True,
-                         sharey = True,figsize=(50, 35)
+# Analyse de survie pour chaque matage
+fig, axes = plt.subplots(nrows = 5, ncols = 5, sharex = False,
+                         sharey = False,figsize=(50, 35)
                         )
-liste_mtg = df_collec["MATAGE"].unique()    
+liste_mtg = df_22["MATAGE"].unique()    
 for mtg, ax in zip(liste_mtg, axes.flatten()):
-    df_mtg = df_collec[df_collec.MATAGE == mtg]
-    categorical_km(df_collec, df_mtg , mtg, ax = ax)
+    df_mtg = df_22[df_22.MATAGE == mtg]
+    categorical_km(df_22, df_mtg , mtg, ax = ax)
     
     ax.set_title(mtg,pad=20,  fontsize=56)
     ax.set_xlabel('Duration', fontsize = 40)
@@ -96,15 +90,15 @@ for mtg, ax in zip(liste_mtg, axes.flatten()):
         
 fig.tight_layout()
 
-# récupérer les données pour un rang de diametre précis
-fig, axes = plt.subplots(nrows = 2, ncols = 3, sharex = True,
-                         sharey = True,figsize=(25, 15)
+# Analyse de survie pour chaque tranche de diametre 
+fig, axes = plt.subplots(nrows = 2, ncols = 3, sharex = False,
+                         sharey = False,figsize=(25, 15)
                         )
-liste_dmt = sorted(df_collec["diametre_range"].unique())
+liste_dmt = sorted(df_22["diametre_range"].unique())
 
 for dmt, ax in zip(liste_dmt, axes.flatten()):
-    df_dmt = df_collec[df_collec.diametre_range == dmt]
-    categorical_km(df_collec, df_dmt , dmt, ax = ax)
+    df_dmt = df_22[df_22.diametre_range == dmt]
+    categorical_km(df_22, df_dmt , dmt, ax = ax)
     
     ax.set_title(dmt,pad=20,  fontsize=56)
     ax.set_xlabel('Duration', fontsize = 40)

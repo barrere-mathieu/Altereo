@@ -50,18 +50,12 @@ def calcul_Pvalue(colonne, df, liste_col):
 
 def calcul_Pvalue_table(colonne, df, liste_col):
     table = np.zeros((len(liste_col), len(liste_col)))
-    l1 = []
-    l2 = []
     for m1, m2 in itertools.combinations(liste_col, 2):
         df_2 = df.loc[(df[colonne] == m1) | (df[colonne] == m2)]
         event_duration(df_2)
         p = pairwise_logrank_test(df_2['duration'], df_2[colonne], df_2['event'])
         pValue = p.p_value[0]
         table[liste_col.index(m1), liste_col.index(m2)] = round(pValue, 2)
-        # l1.append(m1)
-        # l2.append(m2)
-        # l1_u = list(dict.fromkeys(l1))
-        # l2_u = list(dict.fromkeys(l2))
     return table
 
 
@@ -88,9 +82,7 @@ for col in col_list:
 
 
 ## heatmap pour les p_values
-liste_collect = df_all.collectivite.unique()
-
-ax = sns.heatmap(table_collectivite,xticklabels=liste_collect, yticklabels=liste_collect,  annot = False,fmt='.2f', vmin=0, vmax=1, linewidth =0.05)
+ax = sns.heatmap(table_collectivite,xticklabels=liste_col, yticklabels=liste_col,  annot = False,fmt='.2f', vmin=0, vmax=1, linewidth =0.05)
 
 ax.set_xticklabels(ax.get_xticklabels(), fontsize = 8)
 ax.set_yticklabels(ax.get_yticklabels(), fontsize = 8)

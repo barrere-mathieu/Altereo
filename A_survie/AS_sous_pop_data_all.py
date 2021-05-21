@@ -16,7 +16,7 @@ def year_event_pose(df):
     df['year_event'] = df['DDCC'].apply(lambda x: x.year)
     df['diametre_range'] = pd.qcut(df['DIAMETRE'], q=6).astype(str)
     
-    
+  
 #fonction pour appliquer Kapplan_meier
 def categorical_km(df, df_cat ,cat, ax = None):
     # pas de casse dans tt la liste
@@ -31,13 +31,27 @@ def categorical_km(df, df_cat ,cat, ax = None):
     
     kmf.fit(df_cat.duration, event_observed=E, label = cat)    
     kmf.plot(ax=ax, label = cat, legend=False)
+
+#fonction pour appliquer Kapplan_meier
+def categorical_km1(df,cat, ax = None):
+    if df.year_event.isnull().values.all() == True:
+        df.loc[df.year_event.isna() == True, "duration"] = df.year_event.max()- df.year_event.min()
+    else:
+        df.loc[df.year_event.isna() == True, "duration"] = df.year_event.max() - df.year_event.min()
+        df.loc[df.year_event.isna() == False, "duration"]= df['year_event'] - df.year_event.min()  
     
+    T,E = datetimes_to_durations(df["DDP"], df["DDCC"], freq="Y")
+    df["event"] = E
+    kmf = KaplanMeierFitter()
+
+    kmf.fit(df.duration, event_observed=E, label = cat)    
+    kmf.plot(ax=ax, label = cat, legend=False)
     
 #changer la configuration par défaut
 mpl.rcParams['lines.linewidth'] = 7
 
 # Path to data
-PATH = "data/"
+PATH = "../data/"
 
 # Chargement dataset
 df_all = pd.read_csv(PATH + 'master_df_all.csv')
@@ -47,20 +61,20 @@ df_all = df_all.drop(df_all[df_all.MATAGE == 'r'].index)
 df_all = df_all.drop(["ID"], axis = 1)
 
 
-# récupérer toutes les données de la collectivité 22
+# récupérer toutes les données des tuyaux cassés
 year_event_pose(df_all)
-df_22 = df_all[df_all.collectivite == "Collectivite_22"]
 
 # Analyse de survie pour chaque matérieu
 ## Set up subplot grid
-fig, axes = plt.subplots(nrows = 2, ncols = 3, sharex = False,
+fig, axes = plt.subplots(nrows = 2, ncols = 4, sharex = False,
                          sharey = False,figsize=(25, 20)
                         )
 
-liste_mat = df_22["MATERIAU"].unique()
+liste_mat = df_all["MATERIAU"].unique()
 for mat, ax in zip(liste_mat, axes.flatten()):
-    df_mat = df_22[df_22.MATERIAU == mat]
-    categorical_km(df_22, df_mat , mat, ax = ax)
+    df_mat = df_all[df_all.MATERIAU == mat]
+    #categorical_km(df_mat , mat, ax = ax)
+    categorical_km1(df_mat,mat, ax = ax)
     
     ax.set_title(mat,pad=20,  fontsize=56)
     ax.set_xlabel('Duration', fontsize = 40)
@@ -76,10 +90,11 @@ fig.tight_layout()
 fig, axes = plt.subplots(nrows = 5, ncols = 5, sharex = False,
                          sharey = False,figsize=(50, 35)
                         )
-liste_mtg = df_22["MATAGE"].unique()    
+liste_mtg = df_all["MATAGE"].unique()    
 for mtg, ax in zip(liste_mtg, axes.flatten()):
-    df_mtg = df_22[df_22.MATAGE == mtg]
-    categorical_km(df_22, df_mtg , mtg, ax = ax)
+    df_mtg = df_all[df_all.MATAGE == mtg]
+    #categorical_km(df_mtg , mtg, ax = ax) #fenètre d'observation de data_all
+    categorical_km1(df_mtg,mtg, ax = ax)   #fenètre d'observation de df_mtg
     
     ax.set_title(mtg,pad=20,  fontsize=56)
     ax.set_xlabel('Duration', fontsize = 40)
@@ -90,15 +105,17 @@ for mtg, ax in zip(liste_mtg, axes.flatten()):
         
 fig.tight_layout()
 
+
 # Analyse de survie pour chaque tranche de diametre 
 fig, axes = plt.subplots(nrows = 2, ncols = 3, sharex = False,
                          sharey = False,figsize=(25, 15)
                         )
-liste_dmt = sorted(df_22["diametre_range"].unique())
+liste_dmt = sorted(df_all["diametre_range"].unique())
 
 for dmt, ax in zip(liste_dmt, axes.flatten()):
-    df_dmt = df_22[df_22.diametre_range == dmt]
-    categorical_km(df_22, df_dmt , dmt, ax = ax)
+    df_dmt = df_all[df_all.diametre_range == dmt]
+    #categorical_km(df_all, df_dmt , dmt, ax = ax)
+    categorical_km1(df_dmt,dmt, ax = ax)
     
     ax.set_title(dmt,pad=20,  fontsize=56)
     ax.set_xlabel('Duration', fontsize = 40)
@@ -110,62 +127,22 @@ for dmt, ax in zip(liste_dmt, axes.flatten()):
 fig.tight_layout()
 
 
-
-
 # ########## test
-# df_mdt = df_22[df_22.MATERIAU == "ACIER"]
-# a = df_22.year_event.min()
-# b = df_mdt.year_event.min()
+# df_test = df_all[df_all.MATERIAU == "PLOMB"]
+# df_test = df_all[df_all.MATAGE == "ACIER18451920"]
 
-# # pas de casse dans tte la liste
-# if df_mdt.year_event.isnull().values.all() == True:
-#     df_mdt.loc[df_mdt.year_event.isna() == True, "duration"] = df_22.year_event.max()- df_22.year_event.min()
+# a = df_test.year_event.max()
+# b = df_test.year_event.min()
+
+# if df_test.year_event.isnull().values.all() == True:
+#         df_test.loc[df_test.year_event.isna() == True, "duration"] = df_test.year_event.max()- df_test.year_event.min()
 # else:
-#     df_mdt.loc[df_mdt.year_event.isna() == True, "duration"] = df_22.year_event.max() - df_22.year_event.min()
-#     df_mdt.loc[df_mdt.year_event.isna() == False, "duration"]= df_mdt['year_event'] - df_22.year_event.min()  
+#     df_test.loc[df_test.year_event.isna() == True, "duration"] = df_test.year_event.max() - df_test.year_event.min()
+#     df_test.loc[df_test.year_event.isna() == False, "duration"]= df_test['year_event'] - df_test.year_event.min()  
 
-# T,E = datetimes_to_durations(df_mdt["DDP"], df_mdt["DDCC"], freq="Y")
+# T,E = datetimes_to_durations(df_test["DDP"], df_test["DDCC"], freq="Y")
+# df_test["event"] = E
 # kmf = KaplanMeierFitter()
 
-# kmf.fit(df_mdt.duration, event_observed=E)    
-# kmf.plot(label = "PEHD", legend=False)
-
-
-
-# # récupérer les données pour un diametre précis
-# fig, axes = plt.subplots(nrows = 10, ncols = 5, sharex = True,
-#                          sharey = True,figsize=(50, 80)
-#                         )
-# liste_dmt = sorted(df_collec["DIAMETRE"].unique())
-# for dmt, ax in zip(liste_dmt, axes.flatten()):
-#     df_dmt = df_collec[df_collec.DIAMETRE == dmt]
-#     categorical_km(df_collec, df_dmt , dmt, ax = ax)
-    
-#     ax.set_title(dmt,pad=20,  fontsize=56)
-#     ax.set_xlabel('Duration', fontsize = 40)
-#     ax.set_ylabel('Survival probability', fontsize = 40)
-#     ax.grid()
-#     ax.tick_params(axis='x', labelsize=24)
-#     ax.tick_params(axis='y', labelsize=24)
-        
-# plt.tight_layout()
-
-
-# # récupérer les données pour un matérieu précis
-# liste_mat = df_collec["MATERIAU"].unique()
-# for i, mat in enumerate(liste_mat):
-#     ax = plt.subplot(2,3,i+1)
-#     df_mat = df_collec[df_collec.MATERIAU == mat]
-    
-#     T,E = datetimes_to_durations(df_mat["DDP"], df_mat["DDCC"], freq="Y")
-#     kmf = KaplanMeierFitter()
-    
-#     kmf.fit(T, event_observed=E, label = mat)    
-#     kmf.plot_survival_function(ax=ax, legend=False)
-    
-#     plt.title(mat)
-    
-#     if i==0:
-#         plt.ylabel('Frac. in power after $n$ years')
-        
-# plt.tight_layout()
+# kmf.fit(df_test.duration, event_observed=E)    
+# kmf.plot(label = "PLOMB", legend=False)

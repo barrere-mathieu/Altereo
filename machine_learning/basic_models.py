@@ -4,6 +4,7 @@ from sklearn.preprocessing import StandardScaler
 from sksurv.ensemble import RandomSurvivalForest
 from sksurv.util import Surv
 import pickle
+from machine_learning import calcul_AUC
 
 """
 PROBLEMES A VERIFIER :
@@ -12,14 +13,26 @@ PROBLEMES A VERIFIER :
         - Gestion des doublons ? (plusieurs casses)
 """
 
-# General data
-PATH = "data/"
-# PATH = "../data/"
-# Année de prédiction
-A = 2008    # Fin de la période d'observation
-P = 3       # Durée de la prédiction
+# General parameters
+# PATH = "data/"
+PATH = "../data/"
+A = 2008    # Année de prédiction
+P = 2       # Durée de la prédiction
+MODEL_FIT = True # Set to false if you want to load a model
+MODEL_NAME = 'model_rsf.sav' # Set to None if you don't want to save the model
+MODEL_LOAD = "model_rsf.sav" # Path to the model to load. Only works if MODEL_FIT is False.
+
+
+def calcul_periode_obs(d):
+    obs = d.groupby(['collectivite'])['year_casse'].min().rename("obs_start").reset_index(drop=False)
+    d = pd.merge(d, obs, how='left', on='collectivite')
+    obs = d.groupby(['collectivite'])['year_casse'].max().rename("obs_end").reset_index(drop=False)
+    d = pd.merge(d, obs, how='left', on='collectivite')
+    return d
+
 
 # Preparing dataset
+print('Setting up datasets')
 df = pd.read_csv(PATH + 'master_df_events.csv')
 df_all = pd.read_csv(PATH + 'master_df_all.csv')
 
@@ -37,8 +50,12 @@ df_all['year_casse'] = df_all['DDCC'].apply(lambda x: x.year)
 df['DDCC'] = pd.to_datetime(df['DDCC'])
 df['year_casse'] = df['DDCC'].apply(lambda x: x.year)
 
-# Enlever les casses des années >= A (on ne les connais pas encore)
-df_all.loc[df_all.year_casse >= A] = np.NaN
+# Periode d'observation
+df_all = calcul_periode_obs(df_all)
+
+# Enlever les casses des années >= A (on ne les connait pas encore)
+df_all.loc[df_all.year_casse >= A, 'DDCC'] = np.NaN
+df_all.loc[df_all.year_casse >= A, 'year_casse'] = np.NaN
 df_all = df_all.drop_duplicates(keep = 'first') # On élimine les doublons : il se peut qu'un tuyau ait été cassé 2 fois dans une date > A, la seuls colonne qui les distingue est la date de casse (fixée à NaN) -> doublon
 
 # Dupliquer les tuyaux cassés et les ré-inclure dans le dataset comme non cassé (de cette manière ils ne disparaissent pas)
@@ -54,12 +71,6 @@ duplicate = duplicate.drop_duplicates(subset ="ID", keep = 'last', inplace=False
 df_all = pd.concat([df_all, duplicate], ignore_index=True, sort = False)
 
 
-# Periode d'observation
-obs = df_all.groupby(['collectivite'])['year_casse'].min().rename("obs_start").reset_index(drop=False)
-df_all = pd.merge(df_all, obs, how = 'left', on='collectivite')
-obs = df_all.groupby(['collectivite'])['year_casse'].max().rename("obs_end").reset_index(drop=False)
-df_all = pd.merge(df_all, obs, how = 'left', on='collectivite')
-
 
 # Date depuis derniere casse (traitement des tuyaux cassés plusieurs fois)
 # Classement selon ID puis date de casse
@@ -74,12 +85,16 @@ df_all.loc[df_all.ID == df_all.ID2, "derniere_casse"] = df_all['DDCC2']
 # On supprime les colonnes intermédiaires
 df_all = df_all.drop(columns=['ID2', 'DDCC2'])
 
+
 # Année de casse: on regarde chaque période d'observation comme une expérience, début = 1ere casse, fin = derniere casse
 # Si le tuyau n'est pas cassé, on note simplement son "age" en fin de période d'observation.
 # On précisera dans une variable 'event' (True / False) si il est cassé ou pas
 df_all['event'] = True
 df_all.loc[df_all.year_casse.isnull(), "event"] = False
-df_all['year_casse'] = df_all['year_casse'].fillna(df_all['obs_end'])
+df_all['temp'] = A-1
+df_all['temp'] = df_all[['obs_end','temp']].min(axis=1)
+df_all['year_casse'] = df_all['year_casse'].fillna(df_all['temp'])
+df_all = df_all.drop(columns=['temp'])
 
 # Calcul de la durée de vie: C'est une partie de la target, on veut que le modèle l'estime
 df_all['duree_de_vie'] = df_all['year_casse'] - df_all['derniere_casse']
@@ -94,8 +109,8 @@ df_all['reparation'] = df_all['reparation'].fillna(value = 0)
 
 # Standardizing quantitative data
 scaler = StandardScaler()
-df_all['DIAMETRE'] = scaler.fit_transform(df_all[['DIAMETRE']])
-df_all['year_pose'] = scaler.fit_transform(df_all[['year_pose']])
+df_all['DIAMETRE_std'] = scaler.fit_transform(df_all[['DIAMETRE']])
+df_all['year_pose_std'] = scaler.fit_transform(df_all[['year_pose']])
 
 
 # Encoding quantitative variables : oneHotEncoding On supprime MATERIAU car l'info est contenue dans MATAGE
@@ -113,23 +128,65 @@ df_all = pd.concat([df_all, pd.get_dummies(df_all.MATAGE)], axis = 1)
 learning_data = df_all[(df_all['year_pose'] < A) & (df_all['obs_start'] < A)]
 learning_target = Surv.from_arrays(learning_data.event, learning_data.duree_de_vie, 'casse', 'durée de vie')
 learning_data.index = learning_data.ID
-learning_data = learning_data.drop(columns=['ID', 'DDCC', 'IDT', 'DDP', 'year_casse', 'event', 'duree_de_vie', 'obs_start', 'obs_end', 'derniere_casse', 'MATERIAU', 'MATAGE', 'collectivite'])
+learning_data = learning_data.drop(columns=['ID', 'DDCC', 'IDT', 'DDP', 'year_casse', 'event', 'duree_de_vie', 'obs_start', 'obs_end', 'derniere_casse', 'MATERIAU', 'MATAGE', 'collectivite', 'DIAMETRE', 'year_pose'])
 
-# Uniquement les non cassés
-test_data = df_all[(df_all['year_pose'] < A) & (df_all['obs_start'] < A) & (df_all['obs_end'] > A+P) & (df_all['reparation'] == 0)]
-test_target = Surv.from_arrays(test_data.event, test_data.duree_de_vie, 'casse', 'durée de vie')
+# Test data : tous les membre du réseau étant dans une fenêtre d'observation active (tuyaux non cassés car tuyaux cassés sont remplacés)
+test_data = df_all[(df_all['year_pose'] < A) & (df_all['obs_start'] < A) & (df_all['obs_end'] > A+P) & (df_all.DDCC.isnull())]
+# test_target = Surv.from_arrays(test_data.event, test_data.duree_de_vie, 'casse', 'durée de vie')
 test_data.index = test_data.ID
-test_data = test_data.drop(columns=['ID', 'DDCC', 'IDT', 'DDP', 'year_casse', 'event', 'duree_de_vie', 'obs_start', 'obs_end', 'derniere_casse', 'MATERIAU', 'MATAGE', 'collectivite'])
+test_data = test_data.drop(columns=['ID', 'DDCC', 'IDT', 'DDP', 'year_casse', 'event', 'duree_de_vie', 'obs_start', 'obs_end', 'derniere_casse', 'MATERIAU', 'MATAGE', 'collectivite', 'DIAMETRE', 'year_pose'])
 
 # Model construction
-random_state = 0
-rsf = RandomSurvivalForest(n_estimators=500,
-                           min_samples_split=10,
-                           min_samples_leaf=15,
-                           max_features="sqrt",
-                           n_jobs=-1,
-                           random_state=random_state)
-rsf.fit(learning_data, learning_target)
+if MODEL_FIT:
+    print('Fitting model')
+    random_state = 0
+    model = RandomSurvivalForest(n_estimators=500,
+                               min_samples_split=10,
+                               min_samples_leaf=15,
+                               max_features="sqrt",
+                               n_jobs=-1,
+                               random_state=random_state)
+    model.fit(learning_data, learning_target)
+    if MODEL_NAME is not None:
+        pickle.dump(model, open(MODEL_NAME, 'wb'))
+    print('Model predicting')
+    pred = model.predict(test_data)
+
+else:
+    print('Loading model')
+    model = pickle.load(open(MODEL_LOAD, 'rb'))
+    print('Model predicting')
+    pred = model.predict(test_data)
+
+# Association prediction with real labels
+print('Aggregating results')
+# Adding prediction to test
+test_data.index.name = None
+test_data['ID'] = test_data.index
+test_data['proba'] = pred
+# Gathering real test events
+temp = pd.read_csv(PATH + 'master_df_all.csv')[['ID', 'collectivite', 'DDCC', 'DDP']]
+temp['DDCC'] = pd.to_datetime(temp['DDCC'])
+temp['year_casse'] = temp['DDCC'].apply(lambda x: x.year)
+temp['DDP'] = pd.to_datetime(temp['DDP'])
+temp['year_pose'] = temp['DDP'].apply(lambda x: x.year)
+temp = calcul_periode_obs(temp)
+temp = temp[(temp['year_pose'] < A) & (temp['obs_start'] < A) & (temp['obs_end'] > A+P)]
+temp['event'] = 0
+temp.loc[(temp['year_casse'] >= A) & (temp['year_casse'] < A+P), "event"] = 1
+temp.index = temp.ID
+temp.index.name = None
+temp = temp.sort_values(['ID', 'year_casse'], ascending = [True, True])
+temp = temp.drop_duplicates(subset ="ID", keep = 'first', inplace=False)
+temp = temp['event']
+# Combining prediction and events
+test_data = pd.concat([test_data, temp], axis = 1, join='inner')
+# AUC Calculation
+calcul_AUC.AUC(test_data)
+
+
+
+
 
 
 # FIRST APPROACH : NOT OPTIMAL

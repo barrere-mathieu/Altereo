@@ -15,11 +15,11 @@ PROBLEMES A VERIFIER :
 
 # General parameters
 PATH = "../data/"
-A = 2008    # Année de prédiction
+A = 2010    # Année de prédiction
 P = 2       # Durée de la prédiction
 MODEL_FIT = False # Set to false if you want to load a model
-MODEL_NAME = 'model_rsf' # Set to None if you don't want to save the model
-MODEL_LOAD = "model_rsf.sav" # Path to the model to load. Only works if MODEL_FIT is False.
+MODEL_NAME = 'model_rsf2' # Set to None if you don't want to save the model
+MODEL_LOAD = "model_rsf2.sav" # Path to the model to load. Only works if MODEL_FIT is False.
 
 
 def calcul_periode_obs(d):
@@ -130,8 +130,8 @@ learning_data.index = learning_data.ID
 learning_data = learning_data.drop(columns=['ID', 'DDCC', 'IDT', 'DDP', 'year_casse', 'event', 'duree_de_vie', 'obs_start', 'obs_end', 'derniere_casse', 'MATERIAU', 'MATAGE', 'collectivite', 'DIAMETRE', 'year_pose'])
 
 # Test data : tous les membre du réseau étant dans une fenêtre d'observation active (tuyaux non cassés car tuyaux cassés sont remplacés)
-test_data = df_all[(df_all['year_pose'] < A) & (df_all['obs_start'] < A) & (df_all['obs_end'] > A+P) & (df_all.DDCC.isnull())]
-# test_target = Surv.from_arrays(test_data.event, test_data.duree_de_vie, 'casse', 'durée de vie')
+# test_data = df_all[(df_all['year_pose'] < A) & (df_all['obs_start'] < A) & (df_all['obs_end'] > A+P) & (df_all.DDCC.isnull())]
+test_data = df_all[(df_all['year_pose'] < A) & (df_all['obs_start'] < A) & (df_all['obs_end'] > A) & (df_all.DDCC.isnull())]
 test_data.index = test_data.ID
 test_data = test_data.drop(columns=['ID', 'DDCC', 'IDT', 'DDP', 'year_casse', 'event', 'duree_de_vie', 'obs_start', 'obs_end', 'derniere_casse', 'MATERIAU', 'MATAGE', 'collectivite', 'DIAMETRE', 'year_pose'])
 
@@ -170,7 +170,7 @@ temp['year_casse'] = temp['DDCC'].apply(lambda x: x.year)
 temp['DDP'] = pd.to_datetime(temp['DDP'])
 temp['year_pose'] = temp['DDP'].apply(lambda x: x.year)
 temp = calcul_periode_obs(temp)
-temp = temp[(temp['year_pose'] < A) & (temp['obs_start'] < A) & (temp['obs_end'] > A+P)]
+temp = temp[(temp['year_pose'] < A) & (temp['obs_start'] < A) & (temp['obs_end'] > A)]
 temp['event'] = 0
 temp.loc[(temp['year_casse'] >= A) & (temp['year_casse'] < A+P), "event"] = 1
 temp.index = temp.ID
@@ -192,7 +192,7 @@ annotations = [
 
 
 calcul_AUC.save_AUC(test_data, MODEL_NAME, annotations)
-
+# calcul_AUC.stardard_ROC(test_data, MODEL_NAME)
 
 
 

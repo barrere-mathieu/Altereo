@@ -148,7 +148,7 @@ def plot_cumulative_dynamic_auc(df, times, model_name, display = False, save = T
     plt.figure()
     plt.xlabel("years from observation windows starts")
     plt.ylabel("time-dependent AUC")
-    plt.axhline(mean_auc, color='navy', linestyle="--", label = 'mean_AUC')
+    plt.axhline(mean_auc, color='navy', linestyle="--", label='Mean AUC (area = %0.2f)' % mean_auc)
     plt.legend()
     plt.plot(times, AUCs, marker="o", color = 'darkorange', label=model_name)
     if display:

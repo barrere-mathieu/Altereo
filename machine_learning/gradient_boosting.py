@@ -1,19 +1,12 @@
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
-from sksurv.ensemble import RandomSurvivalForest
+from sksurv.ensemble import GradientBoostingSurvivalAnalysis
 from sksurv.util import Surv
 import pickle
 import matplotlib.pyplot as plt
 from machine_learning import calcul_AUC
 
-
-"""
-PROBLEMES A VERIFIER :
-    - Consistance entre 'dataset_all' et 'dataset_event' pour les évènements
-        - Tous les évènements présents dans All ?
-        - Gestion des doublons ? (plusieurs casses)
-"""
 
 # General parameters
 PATH = "../data/"
@@ -22,8 +15,8 @@ INIT_TIME = 20  # Initialisation du modèle: date de dernière casse prises au h
 # Dataset load
 DATASET_LOAD = True
 DATASET_NAME = 'data_prep_2010.csv'
-MODEL_FIT = False # Set to false if you want to load a model
-MODEL_NAME = 'model_rsf_1' # Set to None if you don't want to save the model
+MODEL_FIT = True # Set to false if you want to load a model
+MODEL_NAME = 'XGB_1' # Set to None if you don't want to save the model
 MODEL_LOAD = MODEL_NAME + ".sav" # Path to the model to load. Only relevent if MODEL_FIT is False.
 
 
@@ -55,11 +48,11 @@ def calcul_derniere_casse(df, init = 0):
     return df
 
 
-def prep_dataset(path, censure = 5000, init = 0):
+def prep_dataset(path, censure = A, init = 0):
     # Preparing dataset
     print('Setting up datasets')
-    df = pd.read_csv(PATH + 'master_df_events.csv')
-    df_all = pd.read_csv(PATH + 'master_df_all.csv')
+    df = pd.read_csv(path + 'master_df_events.csv')
+    df_all = pd.read_csv(path + 'master_df_all.csv')
 
     # Enlever les cases inconnues (uniquement valable pour le 1er dataset)
     df = df.drop(df[df.MATERIAU == 'INCONNU'].index)
@@ -77,8 +70,6 @@ def prep_dataset(path, censure = 5000, init = 0):
     df['DDCC'] = pd.to_datetime(df['DDCC'])
     df['year_casse'] = df['DDCC'].apply(lambda x: x.year)
 
-    # df_all.to_csv('extr1.csv') # OK
-
     periode_obs = pd.merge(
         df_all.groupby(['collectivite'])['year_casse'].min().rename("obs_start").reset_index(drop=False),
         df_all.groupby(['collectivite'])['year_casse'].max().rename("obs_end").reset_index(drop=False),
@@ -90,8 +81,6 @@ def prep_dataset(path, censure = 5000, init = 0):
     # Enlever les casses des années >= A (on ne les connait pas encore)
     df_all.loc[df_all.year_casse >= censure, 'DDCC'] = np.NaN
     df_all.loc[df_all.year_casse >= censure, 'year_casse'] = np.NaN
-
-    # df_all.to_csv('extr2.csv') # OK
 
     # Dupliquer les tuyaux cassés et les ré-inclure dans le dataset comme non cassé (de cette manière ils ne disparaissent pas)
     # Les tuyaux réparés apparaitront dans le dataset comme existant, avec une réparation effectuée
@@ -107,18 +96,12 @@ def prep_dataset(path, censure = 5000, init = 0):
     df_all = pd.concat([df_all, duplicate], ignore_index=True, sort = False)
     df_all = df_all.drop_duplicates(keep = 'first') # On élimine les doublons : il se peut qu'un tuyau ait été cassé 2 fois dans une date > A, la seuls colonne qui les distingue est la date de casse (fixée à NaN) -> doublon
 
-    # df_all.to_csv('extr3.csv') # Rajouté date de pose pour les dupliqués -> OK
-
     # Calcul periode d'observation
     # df_all = calcul_periode_obs(df_all)
     df_all = pd.merge(df_all, periode_obs, how='left', on='collectivite')
 
-    # df_all.to_csv('extr4.csv') # OK
-
     # Calcul date depuis derniere casse (traitement des tuyaux cassés plusieurs fois)
     df_all = calcul_derniere_casse(df_all, init = init)
-
-    # df_all.to_csv('extr5.csv') # OK
 
     # Année de casse: on regarde chaque période d'observation comme une expérience, début = 1ere casse, fin = derniere casse
     # Si le tuyau n'est pas cassé, on note simplement son "age" en fin de période d'observation.
@@ -137,8 +120,6 @@ def prep_dataset(path, censure = 5000, init = 0):
     # Ces tuyaux ne nous sont pas utiles -> on n'apprendra rien d'eux et on ne test que sur les collectivités vérifiants end_obs > censure
     df_all = df_all.loc[(df_all['duree_de_vie'] >= 0)]
 
-    # df_all.to_csv('extr6.csv') # OK
-
     # Nombre de réparations sur 1 tuyau (pour une date <= A)
     count_reparation = df[df['year_casse'] < censure].groupby(['ID']).size().rename("reparation").reset_index(drop=False)
     df_all['reparation'] = 0
@@ -154,13 +135,16 @@ def prep_dataset(path, censure = 5000, init = 0):
     return df_all
 
 
-def prep_target_dataset(path, init = 0, prediction = 5000):
+def prep_target_dataset(path, init = 0, prediction = A):
     # Preparing dataset
     print('Setting up target')
-    df_all = pd.read_csv(PATH + 'master_df_all.csv')
+    df = pd.read_csv(path + 'master_df_events.csv')
+    df_all = pd.read_csv(path + 'master_df_all.csv')
 
     # Enlever les cases inconnues (uniquement valable pour le 1er dataset)
+    df = df.drop(df[df.MATERIAU == 'INCONNU'].index)
     df_all = df_all.drop(df_all[df_all.MATERIAU == 'INCONNU'].index)
+    df = df.drop(df[df.MATAGE == 'r'].index)
     df_all = df_all.drop(df_all[df_all.MATAGE == 'r'].index)
 
     # Building datetime features
@@ -168,11 +152,25 @@ def prep_target_dataset(path, init = 0, prediction = 5000):
     df_all['year_pose'] = df_all['DDP'].apply(lambda x: x.year)
     df_all['DDCC'] = pd.to_datetime(df_all['DDCC'])
     df_all['year_casse'] = df_all['DDCC'].apply(lambda x: x.year)
+    df['DDP'] = pd.to_datetime(df['DDP'])
+    df['year_pose'] = df['DDP'].apply(lambda x: x.year)
+    df['DDCC'] = pd.to_datetime(df['DDCC'])
+    df['year_casse'] = df['DDCC'].apply(lambda x: x.year)
 
     periode_obs = pd.merge(
         df_all.groupby(['collectivite'])['year_casse'].min().rename("obs_start").reset_index(drop=False),
         df_all.groupby(['collectivite'])['year_casse'].max().rename("obs_end").reset_index(drop=False),
         on="collectivite")
+
+    # Dupliquer les tuyaux cassés et les ré-inclure dans le dataset comme non cassé (de cette manière ils ne disparaissent pas)
+    # Les tuyaux réparés apparaitront dans le dataset comme existant, avec une réparation effectuée
+    # Prendre le dataset DF, trier dans l'ordre des ID et DDC
+    df = df.sort_values(['ID', 'DDCC'], ascending = [True, True])
+    duplicate = df.loc[df.year_pose < prediction]
+    duplicate['DDCC'] = np.NaN
+    duplicate['year_casse'] = np.NaN
+    duplicate = duplicate.drop_duplicates(subset ="ID", keep = 'last', inplace=False)
+    df_all = pd.concat([df_all, duplicate], ignore_index=True, sort = False)
 
     # Calcul periode d'observation
     df_all = pd.merge(df_all, periode_obs, how='left', on='collectivite')
@@ -186,10 +184,6 @@ def prep_target_dataset(path, init = 0, prediction = 5000):
     df_all['year_casse'] = df_all['year_casse'].fillna(df_all['obs_end'])
     # Calcul de la durée de vie: C'est une partie de la target, on veut que le modèle l'estime
     df_all['duree_de_vie'] = df_all['year_casse'] - df_all['derniere_casse']
-    # Sélection des casses arrivées après l'année de prédiction
-    # df_all = df_all[(df_all['year_pose'] < prediction) & (df_all['obs_start'] < prediction) & (df_all['obs_end'] > prediction) & (df_all['year_casse'] >= prediction)]
-    # Si les tuyaux ont été cassés plusieurs fois : On ne garde que la 1ere fois
-    # df_all = df_all.drop_duplicates(subset="ID", keep='first', inplace=False)
 
     # Define unique ID
     df_all['ID_u'] = df_all['ID'] + df_all['derniere_casse'].astype(str)
@@ -210,6 +204,34 @@ def plot_surv(surv_curves, k, display):
     if display:
         plt.show()
 
+
+class EarlyStoppingMonitor:
+
+    def __init__(self, window_size, max_iter_without_improvement):
+        self.window_size = window_size
+        self.max_iter_without_improvement = max_iter_without_improvement
+        self._best_step = -1
+
+    def __call__(self, iteration, estimator, args):
+        # continue training for first self.window_size iterations
+        if iteration < self.window_size:
+            return False
+
+        # compute average improvement in last self.window_size iterations.
+        # oob_improvement_ is the different in negative log partial likelihood
+        # between the previous and current iteration.
+        start = iteration - self.window_size + 1
+        end = iteration + 1
+        improvement = np.mean(estimator.oob_improvement_[start:end])
+
+        if improvement > 1e-6:
+            self._best_step = iteration
+            return False  # continue fitting
+
+        # stop fitting if there was no improvement
+        # in last max_iter_without_improvement iterations
+        diff = iteration - self._best_step
+        return diff >= self.max_iter_without_improvement
 
 
 
@@ -251,13 +273,17 @@ test_data = test_data[list(learning_data.columns)]
 if MODEL_FIT:
     print('Fitting model')
     random_state = 0
-    model = RandomSurvivalForest(n_estimators=500,
-                               min_samples_split=10,
-                               min_samples_leaf=15,
-                               max_features="sqrt",
-                               n_jobs=-1,
+    model = GradientBoostingSurvivalAnalysis(n_estimators=1000,
+                               learning_rate=0.05,
+                               max_depth = 1,
+                               subsample = 0.5,
+                               dropout_rate=0,
+                               max_features=None, # test sqrt
                                random_state=random_state)
-    model.fit(learning_data, learning_target)
+    monitor = EarlyStoppingMonitor(25, 50)
+    model.fit(learning_data, learning_target, monitor=monitor)
+    print("Fitted base learners:", model.n_estimators_)
+
     if MODEL_NAME is not None:
         pickle.dump(model, open(MODEL_NAME + '.sav', 'wb'))
 else:
@@ -265,10 +291,6 @@ else:
     model = pickle.load(open(MODEL_LOAD, 'rb'))
 print('Model predicting')
 pred = model.predict(test_data)
-surv = model.predict_survival_function(test_data, return_array=True)
-plot_surv(surv, 5, display=False)
-
-
 
 # Association prediction with real labels
 print('Aggregating results')
@@ -277,26 +299,9 @@ test_data['ID_u'] = test_data.index + test_data['derniere_casse'].astype(str)
 test_data.index = test_data['ID_u']
 test_data['proba'] = pred
 test_data.index.name = None
+
 # Gathering real test events
-
-# temp = pd.read_csv(PATH + 'master_df_all.csv')[['ID', 'collectivite', 'DDCC', 'DDP']]
-# temp['DDCC'] = pd.to_datetime(temp['DDCC'])
-# temp['year_casse'] = temp['DDCC'].apply(lambda x: x.year)
-# temp['DDP'] = pd.to_datetime(temp['DDP'])
-# temp['year_pose'] = temp['DDP'].apply(lambda x: x.year)
-# temp = calcul_periode_obs(temp)
-# temp = calcul_derniere_casse(temp)
-# temp['year_casse'] = temp['year_casse'].fillna(temp['obs_end'])
-# temp = temp[(temp['year_pose'] < A) & (temp['obs_start'] < A) & (temp['obs_end'] > A) & (temp['year_casse'] >= A)]
-# temp['duree_de_vie'] = temp['year_casse'] - temp['derniere_casse']
-# temp['event'] = 1
-# temp.loc[df_all.DDCC.isnull(), "event"] = 0
-# temp = temp.drop_duplicates(subset ="ID", keep = 'first', inplace=False) # Si les tuyaux ont été cassés plusieurs fois : On ne garde que la 1ere fois
-# temp.index = temp.ID
-# temp.index.name = None
-
-temp = prep_target_dataset(PATH, init = INIT_TIME, prediction = A)
-# Suppression des doublons: tuyaux dont la derniere casse a eu lieux la même année (50aine)
+temp = prep_target_dataset(PATH, init = INIT_TIME, prediction=A)
 temp = temp.drop_duplicates(subset ="ID_u", keep = 'first', inplace=False)
 
 # Combining prediction and events
@@ -304,18 +309,16 @@ test_data = pd.concat([test_data, temp['event']], axis = 1, join='inner')
 test_data = pd.concat([test_data, temp['duree_de_vie']], axis = 1, join='inner')
 test_target = Surv.from_arrays(test_data.event, test_data.duree_de_vie, 'casse', 'duree_de_vie')
 
-# Scoring model: Returns C index (biaised)
-# score = model.score(test_data[learning_data.columns], test_target)
-# print('C score =', score)
-
 # Plotting AUC dynamic
 times = np.unique(np.percentile(test_target["duree_de_vie"], np.linspace(5, 81, 10)))
-y_events = learning_target['duree_de_vie']
-train_min, train_max = np.min(y_events), np.max(y_events)
-y_events = test_target['duree_de_vie']
-test_min, test_max = np.min(y_events), np.max(y_events)
+calcul_AUC.plot_cumulative_dynamic_auc(test_data, times, MODEL_NAME, display=False)
 
-# times = np.unique(np.percentile(test_target["duree_de_vie"], np.linspace(5, 81, 15)))
-# times = np.linspace(train_min+int(abs(train_min-train_max)/5), train_max-int(abs(train_min-train_max)/5), 5)
-# calcul_AUC.plot_cumulative_dynamic_auc_auto(test_data.proba, times, learning_target, test_target, MODEL_NAME)
-calcul_AUC.plot_cumulative_dynamic_auc(test_data, times, MODEL_NAME, display=True)
+# Ploting standard ROC curve
+annotations = [
+    ('Model', 'Random Survival Forest'),
+    ('Année prédiction', A),
+    ('Nombre de collectivités', len(temp.collectivite.unique())),
+    ('Nombre tuyaux total', test_data.shape[0]),
+    ('Nombre de casses', sum(test_data.event)),
+]
+calcul_AUC.save_AUC(test_data, MODEL_NAME, annotations)

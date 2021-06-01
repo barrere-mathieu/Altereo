@@ -72,7 +72,8 @@ for col in col_list:
         np.savetxt('../results/tableau_collectivite.csv', table_collectivite, delimiter=',')
     else:
         liste_col = list(group_22[col].unique())
-        calcul_Pvalue(col, group_22, liste_col)
+        #calcul_Pvalue(col, group_22, liste_col)
+        #table_collectivite = calcul_Pvalue_table(col, group_22, liste_col)
             
     similar_data_collec = pd.DataFrame(result_similar, columns = ["Membre_1", "Membre_2", "p_value"])
     similar_data_collec.to_csv('../results/' + col+'_similar_pvalue.csv')
@@ -87,7 +88,7 @@ ax = sns.heatmap(table_collectivite,xticklabels=liste_col, yticklabels=liste_col
 ax.set_xticklabels(ax.get_xticklabels(), fontsize = 8)
 ax.set_yticklabels(ax.get_yticklabels(), fontsize = 8)
 
-plt.title('Seaborn heatmap - pValue pour toutes les collectivités')
+plt.title('Seaborn heatmap - pValue pour toutes les '+col)
 
 plt.show()
 

@@ -279,8 +279,7 @@ if MODEL_FIT:
                                subsample = 0.5,
                                dropout_rate=0,
                                max_features=None, # test sqrt
-                               random_state=random_state,
-                               njob = 50)
+                               random_state=random_state)
     monitor = EarlyStoppingMonitor(25, 50)
     model.fit(learning_data, learning_target, monitor=monitor)
     print("Fitted base learners:", model.n_estimators_)

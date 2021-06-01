@@ -334,7 +334,7 @@ test_data = df_all[(df_all['year_pose'] < A) & (df_all['obs_start'] < A) & (df_a
 test_data.index = test_data.ID
 test_data = test_data[list(learning_data.columns)]
 features_name = list(test_data.columns)
-perm = PermutationImportance(model, n_iter=15, random_state=0)
+perm = PermutationImportance(model, n_iter=15, random_state=0, njob = 50)
 perm.fit(test_data, test_target)
 eli5.show_weights(perm, feature_names=features_name)
 

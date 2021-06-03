@@ -13,7 +13,7 @@ PATH = "../data/"
 A = 2010    # Année de prédiction
 INIT_TIME = 20  # Initialisation du modèle: date de dernière casse prises au hasard
 # Dataset load
-DATASET_LOAD = True
+DATASET_LOAD = False
 DATASET_NAME = 'data_prep_2010.csv'
 MODEL_FIT = True # Set to false if you want to load a model
 MODEL_NAME = 'XGB_1' # Set to None if you don't want to save the model

@@ -23,9 +23,9 @@ A = 2010    # Année de prédiction
 INIT_TIME = 20  # Initialisation du modèle: date de dernière casse prises au hasard
 # Dataset load
 DATASET_LOAD = True
-DATASET_NAME = 'data_prep_2010.csv'
-MODEL_FIT = False # Set to false if you want to load a model
-MODEL_NAME = 'model_rsf_1' # Set to None if you don't want to save the model
+DATASET_NAME = 'data_prep_REG2010.csv'
+MODEL_FIT = True # Set to false if you want to load a model
+MODEL_NAME = 'model_rsf_1_REG' # Set to None if you don't want to save the model
 MODEL_LOAD = MODEL_NAME + ".sav" # Path to the model to load. Only relevent if MODEL_FIT is False.
 
 
@@ -42,18 +42,22 @@ def calcul_derniere_casse(df, init = 0):
     # Décallage ID et date de casse
     df['ID2'] = df['ID'].shift(1).fillna(value=0)
     df['DDCC2'] = df['year_casse'].shift(1).fillna(value=0)
-    # Définition par défaut de la date de dernière casse à la date de début de fenêtre - 20 an (ou date de pose si elle arrive plus tard)
-    # df['temp'] = df.obs_start - init
-    # df['derniere_casse'] = df[['year_pose', 'temp']].max(axis=1)
-    df['derniere_casse'] = np.NaN
-    df['temp'] = df.obs_start - init
-    df['temp2'] = df.obs_start - int(2*init)
-    df.loc[df.year_pose <= df.temp2, 'derniere_casse'] = df.loc[df.year_pose <= df.temp2, ['year_pose', 'temp']].max(axis=1)
-    df.derniere_casse = df.derniere_casse.fillna(df['year_pose'])
-    # Si jamais le même indice arrive 2 fois (il a été cassé 2 fois), alors on note la date de la derniere casse comme la date de casse de casse du même ID situé 1 case plus haut dans le tableau
+    df['derniere_casse'] = df['year_pose']
+    # Si jamais le même indice arrive 2 fois (il a été cassé 2 fois), alors on note la date de la derniere casse comme la date de casse du même ID situé 1 case plus haut dans le tableau
     df.loc[df.ID == df.ID2, "derniere_casse"] = df['DDCC2']
     # On supprime les colonnes intermédiaires
-    df = df.drop(columns=['ID2', 'DDCC2', 'temp', 'temp2'])
+    df = df.drop(columns=['ID2', 'DDCC2'])
+    return df
+
+def duplicate_events(df, N=1, ddv_max = 10):
+    if N != 0:
+        temp = df.loc[(df['event'] == 1) & (df['duree_de_vie'] >= ddv_max)]
+        for k in range(N):
+            for s in [-1, 1]:
+                temp1 = temp.copy()
+                temp1.year_casse = temp1.year_casse + s*(k+1)
+                temp1.duree_de_vie = temp1.duree_de_vie + s*(k+1)
+                df = pd.concat([df, temp1], ignore_index=True, axis=0)
     return df
 
 
@@ -79,8 +83,6 @@ def prep_dataset(path, censure = A, init = 0):
     df['DDCC'] = pd.to_datetime(df['DDCC'])
     df['year_casse'] = df['DDCC'].apply(lambda x: x.year)
 
-    # df_all.to_csv('extr1.csv') # OK
-
     periode_obs = pd.merge(
         df_all.groupby(['collectivite'])['year_casse'].min().rename("obs_start").reset_index(drop=False),
         df_all.groupby(['collectivite'])['year_casse'].max().rename("obs_end").reset_index(drop=False),
@@ -92,8 +94,6 @@ def prep_dataset(path, censure = A, init = 0):
     # Enlever les casses des années >= A (on ne les connait pas encore)
     df_all.loc[df_all.year_casse >= censure, 'DDCC'] = np.NaN
     df_all.loc[df_all.year_casse >= censure, 'year_casse'] = np.NaN
-
-    # df_all.to_csv('extr2.csv') # OK
 
     # Dupliquer les tuyaux cassés et les ré-inclure dans le dataset comme non cassé (de cette manière ils ne disparaissent pas)
     # Les tuyaux réparés apparaitront dans le dataset comme existant, avec une réparation effectuée
@@ -109,24 +109,18 @@ def prep_dataset(path, censure = A, init = 0):
     df_all = pd.concat([df_all, duplicate], ignore_index=True, sort = False)
     df_all = df_all.drop_duplicates(keep = 'first') # On élimine les doublons : il se peut qu'un tuyau ait été cassé 2 fois dans une date > A, la seuls colonne qui les distingue est la date de casse (fixée à NaN) -> doublon
 
-    # df_all.to_csv('extr3.csv') # Rajouté date de pose pour les dupliqués -> OK
-
     # Calcul periode d'observation
     # df_all = calcul_periode_obs(df_all)
     df_all = pd.merge(df_all, periode_obs, how='left', on='collectivite')
 
-    # df_all.to_csv('extr4.csv') # OK
-
     # Calcul date depuis derniere casse (traitement des tuyaux cassés plusieurs fois)
     df_all = calcul_derniere_casse(df_all, init = init)
-
-    # df_all.to_csv('extr5.csv') # OK
 
     # Année de casse: on regarde chaque période d'observation comme une expérience, début = 1ere casse, fin = derniere casse
     # Si le tuyau n'est pas cassé, on note simplement son "age" en fin de période d'observation.
     # On précisera dans une variable 'event' (True / False) si il est cassé ou pas
-    df_all['event'] = True
-    df_all.loc[df_all.year_casse.isnull(), "event"] = False
+    df_all['event'] = 1
+    df_all.loc[df_all.year_casse.isnull(), "event"] = 0
     df_all['temp'] = censure-1
     df_all['temp'] = df_all[['obs_end', 'temp']].min(axis=1)
     df_all['year_casse'] = df_all['year_casse'].fillna(df_all['temp'])
@@ -135,23 +129,16 @@ def prep_dataset(path, censure = A, init = 0):
     # Calcul de la durée de vie: C'est une partie de la target, on veut que le modèle l'estime
     df_all['duree_de_vie'] = df_all['year_casse'] - df_all['derniere_casse']
 
+    df_all = duplicate_events(df_all, N=0, ddv_max=10)
+
     # On supprime les tuyaux étant installés APRES la fin d'une période d'observation (durée de vie négative car : end_obs < year_pose <= censure)
     # Ces tuyaux ne nous sont pas utiles -> on n'apprendra rien d'eux et on ne test que sur les collectivités vérifiants end_obs > censure
     df_all = df_all.loc[(df_all['duree_de_vie'] >= 0)]
 
-    # df_all.to_csv('extr6.csv') # OK
+    # On enlève les tuyaux dont la date de dernière casse n'est pas identifiable
+    df_all = df_all.drop(df_all.loc[df_all["derniere_casse"] <= df_all['obs_start'] - init].index)
 
-    # Nombre de réparations sur 1 tuyau (pour une date <= A)
-    count_reparation = df[df['year_casse'] < censure].groupby(['ID']).size().rename("reparation").reset_index(drop=False)
-    df_all['reparation'] = 0
-    df_all.loc[(df_all['reparation'] == 0) & (df_all["year_pose"] <= df_all['obs_start'] - 2*init), "reparation"] = 1 # Initialisation à 1 pour les tuyaux plus vieux que l'initialisation
-    for id in count_reparation.ID:
-        temp = df_all.loc[df_all['ID'] == id]
-        init_reparation = list(temp['reparation'])[0]
-        for i, j in enumerate(temp.index):
-            df_all.loc[j, "reparation"] = i + init_reparation
-
-    df_all.to_csv(PATH + 'data_prep_' + str(censure) + '.csv')
+    df_all.to_csv(PATH + 'data_prep_REG' + str(censure) + '.csv')
 
     return df_all
 
@@ -329,12 +316,12 @@ annotations = [
 ]
 calcul_AUC.save_AUC(test_data, MODEL_NAME, annotations)
 
-# Variable importance
-test_data = df_all[(df_all['year_pose'] < A) & (df_all['obs_start'] < A) & (df_all['obs_end'] > A) & (df_all.DDCC.isnull())]
-test_data.index = test_data.ID
-test_data = test_data[list(learning_data.columns)]
-features_name = list(test_data.columns)
-perm = PermutationImportance(model, n_iter=15, random_state=0, njob = 50)
-perm.fit(test_data, test_target)
-eli5.show_weights(perm, feature_names=features_name)
+# # Variable importance
+# test_data = df_all[(df_all['year_pose'] < A) & (df_all['obs_start'] < A) & (df_all['obs_end'] > A) & (df_all.DDCC.isnull())]
+# test_data.index = test_data.ID
+# test_data = test_data[list(learning_data.columns)]
+# features_name = list(test_data.columns)
+# perm = PermutationImportance(model, n_iter=15, random_state=0, njob = 50)
+# perm.fit(test_data, test_target)
+# eli5.show_weights(perm, feature_names=features_name)
 

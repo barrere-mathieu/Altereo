@@ -214,6 +214,11 @@ def plot_surv(surv_curves, k, display):
         plt.show()
 
 
+def scoring_integral(df_survival_functions, longueur_interval):
+    borne_inf = df_survival_functions.duree_de_vie - int(longueur_interval/2)
+    borne_sup = df_survival_functions.duree_de_vie + int(longueur_interval/2)
+    # df_score = intégrale fonction de survie (borne_inf, borne_sup)
+    # return df_score
 
 
 
@@ -264,7 +269,7 @@ else:
 print('Model predicting')
 pred = model.predict(test_data)
 surv = model.predict_survival_function(test_data, return_array=True)
-
+# pred = scoring_integral(surv, 20)
 
 plot_surv(surv, 5, display=False)
 

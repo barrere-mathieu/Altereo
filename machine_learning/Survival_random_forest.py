@@ -28,7 +28,6 @@ MODEL_FIT = True # Set to false if you want to load a model
 MODEL_NAME = 'model_rsf_2' # Set to None if you don't want to save the model
 MODEL_LOAD = MODEL_NAME + ".sav" # Path to the model to load. Only relevent if MODEL_FIT is False.
 
-
 def calcul_periode_obs(d):
     obs = d.groupby(['collectivite'])['year_casse'].min().rename("obs_start").reset_index(drop=False)
     d = pd.merge(d, obs, how='left', on='collectivite')
@@ -49,6 +48,7 @@ def calcul_derniere_casse(df, init = 0):
     df['temp'] = df.obs_start - init
     df['temp2'] = df.obs_start - int(2*init)
     df.loc[df.year_pose <= df.temp2, 'derniere_casse'] = df.loc[df.year_pose <= df.temp2, ['year_pose', 'temp']].max(axis=1)
+    # df.loc[df.year_pose <= df.temp2, 'derniere_casse'] = regression.predict(...)
     df.derniere_casse = df.derniere_casse.fillna(df['year_pose'])
     # Si jamais le même indice arrive 2 fois (il a été cassé 2 fois), alors on note la date de la derniere casse comme la date de casse de casse du même ID situé 1 case plus haut dans le tableau
     df.loc[df.ID == df.ID2, "derniere_casse"] = df['DDCC2']
@@ -253,6 +253,7 @@ df_all = pd.concat([df_all, pd.get_dummies(df_all.MATAGE)], axis = 1)
 # We remove pipes that has not started observation period
 
 learning_data = df_all[(df_all['year_pose'] < A) & (df_all['obs_start'] < A)]
+# learning_data = df_all[(df_all['year_pose'] < A) & (df_all['obs_start'] < A) & (df_all['collectivite'] != 'Collectivite_13')]
 learning_data = learning_data.loc[:, (learning_data != 0).any(axis=0)]
 learning_target = Surv.from_arrays(learning_data.event, learning_data.duree_de_vie, 'casse', 'duree_de_vie')
 learning_data.index = learning_data.ID
@@ -260,6 +261,7 @@ learning_data = learning_data.drop(columns=['ID', 'DDCC', 'IDT', 'DDP', 'year_ca
 
 # Test data : tous les membre du réseau étant dans une fenêtre d'observation active (tuyaux non cassés car tuyaux cassés sont remplacés)
 test_data = df_all[(df_all['year_pose'] < A) & (df_all['obs_start'] < A) & (df_all['obs_end'] > A) & (df_all.DDCC.isnull())]
+# test_data = df_all[(df_all['year_pose'] < A) & (df_all['collectivite'] == 'Collectivite_13') & (df_all.DDCC.isnull())]
 test_data.index = test_data.ID
 test_data = test_data[list(learning_data.columns)]
 
@@ -334,7 +336,7 @@ test_data = df_all[(df_all['year_pose'] < A) & (df_all['obs_start'] < A) & (df_a
 test_data.index = test_data.ID
 test_data = test_data[list(learning_data.columns)]
 features_name = list(test_data.columns)
-perm = PermutationImportance(model, n_iter=15, random_state=0, njob = 50)
+perm = PermutationImportance(model, n_iter=15, random_state=0)
 perm.fit(test_data, test_target)
 eli5.show_weights(perm, feature_names=features_name)
 

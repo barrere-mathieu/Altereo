@@ -6,8 +6,8 @@ from sksurv.util import Surv
 import pickle
 import matplotlib.pyplot as plt
 from machine_learning import calcul_AUC
-import eli5
-from eli5.sklearn import PermutationImportance
+# import eli5
+# from eli5.sklearn import PermutationImportance
 
 
 """
@@ -23,18 +23,10 @@ A = 2010    # Année de prédiction
 INIT_TIME = 20  # Initialisation du modèle: date de dernière casse prises au hasard
 # Dataset load
 DATASET_LOAD = False
-DATASET_NAME = 'data_prep_2010.csv'
+DATASET_NAME = 'data_prep_2010.csv' 
 MODEL_FIT = True # Set to false if you want to load a model
-MODEL_NAME = 'model_rsf_2' # Set to None if you don't want to save the model
+MODEL_NAME = 'model_rsf_collect_1' # Set to None if you don't want to save the model
 MODEL_LOAD = MODEL_NAME + ".sav" # Path to the model to load. Only relevent if MODEL_FIT is False.
-
-
-def calcul_periode_obs(d):
-    obs = d.groupby(['collectivite'])['year_casse'].min().rename("obs_start").reset_index(drop=False)
-    d = pd.merge(d, obs, how='left', on='collectivite')
-    obs = d.groupby(['collectivite'])['year_casse'].max().rename("obs_end").reset_index(drop=False)
-    d = pd.merge(d, obs, how='left', on='collectivite')
-    return d
 
 def calcul_derniere_casse(df, init = 0):
     # Classement selon ID puis date de casse
@@ -54,6 +46,7 @@ def calcul_derniere_casse(df, init = 0):
     df.loc[df.ID == df.ID2, "derniere_casse"] = df['DDCC2']
     # On supprime les colonnes intermédiaires
     df = df.drop(columns=['ID2', 'DDCC2', 'temp', 'temp2'])
+    
     return df
 
 
@@ -93,7 +86,7 @@ def prep_dataset(path, censure = A, init = 0):
     df_all.loc[df_all.year_casse >= censure, 'DDCC'] = np.NaN
     df_all.loc[df_all.year_casse >= censure, 'year_casse'] = np.NaN
 
-    # df_all.to_csv('extr2.csv') # OK
+    #df_all.to_csv('extr2.csv') # OK
 
     # Dupliquer les tuyaux cassés et les ré-inclure dans le dataset comme non cassé (de cette manière ils ne disparaissent pas)
     # Les tuyaux réparés apparaitront dans le dataset comme existant, avec une réparation effectuée
@@ -109,18 +102,18 @@ def prep_dataset(path, censure = A, init = 0):
     df_all = pd.concat([df_all, duplicate], ignore_index=True, sort = False)
     df_all = df_all.drop_duplicates(keep = 'first') # On élimine les doublons : il se peut qu'un tuyau ait été cassé 2 fois dans une date > A, la seuls colonne qui les distingue est la date de casse (fixée à NaN) -> doublon
 
-    # df_all.to_csv('extr3.csv') # Rajouté date de pose pour les dupliqués -> OK
+    #df_all.to_csv('extr3.csv') # Rajouté date de pose pour les dupliqués -> OK
 
     # Calcul periode d'observation
     # df_all = calcul_periode_obs(df_all)
     df_all = pd.merge(df_all, periode_obs, how='left', on='collectivite')
 
-    # df_all.to_csv('extr4.csv') # OK
+    # # df_all.to_csv('extr4.csv') # OK
 
     # Calcul date depuis derniere casse (traitement des tuyaux cassés plusieurs fois)
     df_all = calcul_derniere_casse(df_all, init = init)
 
-    # df_all.to_csv('extr5.csv') # OK
+    # # df_all.to_csv('extr5.csv') # OK
 
     # Année de casse: on regarde chaque période d'observation comme une expérience, début = 1ere casse, fin = derniere casse
     # Si le tuyau n'est pas cassé, on note simplement son "age" en fin de période d'observation.
@@ -139,22 +132,11 @@ def prep_dataset(path, censure = A, init = 0):
     # Ces tuyaux ne nous sont pas utiles -> on n'apprendra rien d'eux et on ne test que sur les collectivités vérifiants end_obs > censure
     df_all = df_all.loc[(df_all['duree_de_vie'] >= 0)]
 
-    # df_all.to_csv('extr6.csv') # OK
-
-    # Nombre de réparations sur 1 tuyau (pour une date <= A)
-    count_reparation = df[df['year_casse'] < censure].groupby(['ID']).size().rename("reparation").reset_index(drop=False)
-    df_all['reparation'] = 0
-    df_all.loc[(df_all['reparation'] == 0) & (df_all["year_pose"] <= df_all['obs_start'] - 2*init), "reparation"] = 1 # Initialisation à 1 pour les tuyaux plus vieux que l'initialisation
-    for id in count_reparation.ID:
-        temp = df_all.loc[df_all['ID'] == id]
-        init_reparation = list(temp['reparation'])[0]
-        for i, j in enumerate(temp.index):
-            df_all.loc[j, "reparation"] = i + init_reparation
+    # # df_all.to_csv('extr6.csv') # OK
 
     df_all.to_csv(PATH + 'data_prep_' + str(censure) + '.csv')
 
     return df_all
-
 
 def prep_target_dataset(path, init = 0, prediction = A):
     # Preparing dataset
@@ -213,6 +195,7 @@ def prep_target_dataset(path, init = 0, prediction = A):
     df_all.index.name = None
     return df_all
 
+#Fonction pour tracer les courbes de survie pour k tuyaux
 def plot_surv(surv_curves, k, display):
     np.random.shuffle(surv_curves)
     for i, s in enumerate(surv_curves[:k, :]):
@@ -225,11 +208,7 @@ def plot_surv(surv_curves, k, display):
 
     if display:
         plt.show()
-
-
-
-
-
+        
 #----------------------------------------------------------------------------------------------------------------------#
 # MAIN
 
@@ -248,18 +227,19 @@ df_all['year_pose_std'] = scaler.fit_transform(df_all[['year_pose']])
 df_all = pd.concat([df_all, pd.get_dummies(df_all.collectivite)], axis = 1)
 df_all = pd.concat([df_all, pd.get_dummies(df_all.MATAGE)], axis = 1)
 
+
 # New approach: At year A, we start a new experiment -> we test on all data with obs window fully included in A + P
 # We learn on the whole dataset with all available data (failure & pose < A)
 # We remove pipes that has not started observation period
 
-learning_data = df_all[(df_all['year_pose'] < A) & (df_all['obs_start'] < A)]
+learning_data = df_all[(df_all['year_pose'] < A) & (df_all['obs_start'] < A) & (df_all['collectivite'] != 'Collectivite_20')]
 learning_data = learning_data.loc[:, (learning_data != 0).any(axis=0)]
 learning_target = Surv.from_arrays(learning_data.event, learning_data.duree_de_vie, 'casse', 'duree_de_vie')
 learning_data.index = learning_data.ID
-learning_data = learning_data.drop(columns=['ID', 'DDCC', 'IDT', 'DDP', 'year_casse', 'event', 'duree_de_vie', 'obs_start', 'obs_end', 'MATERIAU', 'MATAGE', 'collectivite', 'DIAMETRE', 'year_pose'])
+learning_data = learning_data.drop(columns=['ID', 'reparation', 'DDCC', 'IDT', 'DDP', 'year_casse', 'event', 'duree_de_vie', 'obs_start', 'obs_end', 'MATERIAU', 'MATAGE', 'collectivite', 'DIAMETRE', 'year_pose'])
 
 # Test data : tous les membre du réseau étant dans une fenêtre d'observation active (tuyaux non cassés car tuyaux cassés sont remplacés)
-test_data = df_all[(df_all['year_pose'] < A) & (df_all['obs_start'] < A) & (df_all['obs_end'] > A) & (df_all.DDCC.isnull())]
+test_data = df_all[(df_all['year_pose'] < A) & (df_all['obs_start'] < A) & (df_all['obs_end'] > A) & (df_all.DDCC.isnull()) & (df_all['collectivite'] == 'Collectivite_20')]
 test_data.index = test_data.ID
 test_data = test_data[list(learning_data.columns)]
 
@@ -283,9 +263,8 @@ print('Model predicting')
 pred = model.predict(test_data)
 surv = model.predict_survival_function(test_data, return_array=True)
 
-
+# tracer quelques courbes de survies pour 5 tuyaux
 plot_surv(surv, 5, display=False)
-
 
 # Association prediction with real labels
 print('Aggregating results')
@@ -294,7 +273,6 @@ test_data['ID_u'] = test_data.index + test_data['derniere_casse'].astype(str)
 test_data.index = test_data['ID_u']
 test_data['proba'] = pred
 test_data.index.name = None
-
 # Gathering real test events
 temp = prep_target_dataset(PATH, init = INIT_TIME, prediction=A)
 # Suppression des doublons: tuyaux dont la derniere casse a eu lieux la même année (50aine)
@@ -304,20 +282,15 @@ temp = temp.drop_duplicates(subset ="ID_u", keep = 'first', inplace=False)
 test_data = pd.concat([test_data, temp['event']], axis = 1, join='inner')
 test_data = pd.concat([test_data, temp['duree_de_vie']], axis = 1, join='inner')
 test_target = Surv.from_arrays(test_data.event, test_data.duree_de_vie, 'casse', 'duree_de_vie')
+# ici on obtient le test data avec la prediction 'proba' et la réalité 'event' et 
+# 'duree de vie' obtenue à partir de la fonction 'prep_target_dataset'
+# finalement on sépare la réalité dans 'test_target'
 
-# Scoring model: Returns C index (biaised)
-# score = model.score(test_data[learning_data.columns], test_target)
-# print('C score =', score)
 
 # Plotting AUC dynamic
 times = np.unique(np.percentile(test_target["duree_de_vie"], np.linspace(5, 81, 10)))
-# times = np.unique(np.percentile(test_target["duree_de_vie"], np.linspace(5, 81, 15)))
-# times = np.linspace(train_min+int(abs(train_min-train_max)/5), train_max-int(abs(train_min-train_max)/5), 5)
-# y_events = learning_target['duree_de_vie']
-# train_min, train_max = np.min(y_events), np.max(y_events)
-# y_events = test_target['duree_de_vie']
-# test_min, test_max = np.min(y_events), np.max(y_events)
 calcul_AUC.plot_cumulative_dynamic_auc(test_data, times, MODEL_NAME, display=False)
+
 
 # Ploting standard ROC curve
 annotations = [
@@ -329,12 +302,7 @@ annotations = [
 ]
 calcul_AUC.save_AUC(test_data, MODEL_NAME, annotations)
 
-# Variable importance
-# test_data = df_all[(df_all['year_pose'] < A) & (df_all['obs_start'] < A) & (df_all['obs_end'] > A) & (df_all.DDCC.isnull())]
-# test_data.index = test_data.ID
-# test_data = test_data[list(learning_data.columns)]
-# features_name = list(test_data.columns)
-# perm = PermutationImportance(model, n_iter=15, random_state=0, njob = 50)
-# perm.fit(test_data, test_target)
-# eli5.show_weights(perm, feature_names=features_name)
+
+
+
 

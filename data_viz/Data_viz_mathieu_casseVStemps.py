@@ -42,7 +42,7 @@ for i in range(len(collectivite)):
         j+=1
     # New column in dataframe df_concat: number of breaks per year for a specific collectivity "c"
     c = collectivite[i]
-    df_concat[c] = df[df["collectivite"] == c].groupby(["year_casse"], as_index=False).size()
+    df_concat[c] = df[df["collectivite"] == c].groupby(["year_casse"]).size()
     # Defining the trace
     trace = go.Scatter(
         x = list(df_concat.index),
@@ -62,3 +62,6 @@ plotly.offline.plot(fig2)
 # Subplots
 fig.update_layout(showlegend=False)
 plotly.offline.plot(fig)
+
+
+# , as_index=False

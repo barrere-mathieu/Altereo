@@ -7,8 +7,6 @@ import seaborn as sns; sns.set_theme()
 import matplotlib.pyplot as plt
 
 
-
-
 # Path to data
 PATH = "../data/"
 
@@ -26,8 +24,6 @@ df_all['year_pose'] = df_all['DDP'].apply(lambda x: x.year)
 df_all['year_event'] = df_all['DDCC'].apply(lambda x: x.year)
 df_all['diametre_range'] = pd.qcut(df_all['DIAMETRE'], q=6).astype(str)
 
-
-
 #fonction pour les colonnes duration et event
 def event_duration(df):
     df.loc[df.year_event.isna() == True, "duration"] = df.year_event.max() - df.year_event.min()
@@ -36,7 +32,6 @@ def event_duration(df):
     T,E = datetimes_to_durations(df["DDP"], df["DDCC"], freq="Y")
     df["event"] = E
     
-
 def calcul_Pvalue_table(colonne, df, liste_col):
     table = np.zeros((len(liste_col), len(liste_col)))
     for m1, m2 in itertools.combinations(liste_col, 2):
@@ -54,9 +49,21 @@ for col in col_list:
     table_collectivite = calcul_Pvalue_table(col, df_all, liste_col)
     np.savetxt('../results/tableau_'+col+'.csv', table_collectivite, delimiter=',')
     
-    ax = sns.heatmap(table_collectivite, xticklabels=liste_col, yticklabels=liste_col, vmin=0, vmax=1, linewidth =0.05)
+    # affichage heatmap
+    ax = sns.heatmap(table_collectivite, xticklabels=liste_col, yticklabels=liste_col, vmax=1, linewidth =0.05)
     plt.title('Seaborn heatmap - pValue pour:'+ col) 
     
     ax.set_xticklabels(ax.get_xticklabels(), fontsize = 8)
     ax.set_yticklabels(ax.get_yticklabels(), fontsize = 8)
-
+    plt.show()
+    
+    
+    # mask = np.zeros_like(table_collectivite)
+    # mask[np.tril_indices_from(mask)] = True
+    # with sns.axes_style("white"):
+    #     f, ax = plt.subplots(figsize=(7, 5))
+    #     ax = sns.heatmap(table_collectivite, xticklabels=liste_col, yticklabels=liste_col, linewidth =0.05, 
+    #                      mask=mask, vmax=1, square=True)
+    
+    
+    
